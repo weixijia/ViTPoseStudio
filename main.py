@@ -93,8 +93,7 @@ class ViTPoseApp(ctk.CTk):
         
     def change_model(self, choice):
         size = choice.split(" ")[0] # gets 's', 'b', 'l', 'h'
-        self.overlay_text = f"PREPARING {size.upper()} MODEL..."
-        self.status_label.configure(text=f"Loading {size.upper()} Model...")
+        self.status_label.configure(text=f"Loading {size.upper()} Model...\nPlease wait.", text_color="orange", font=ctk.CTkFont(size=16, weight="bold"))
         threading.Thread(target=self._load_specific_model, args=(size,), daemon=True).start()
 
     def _load_specific_model(self, size="s"):
@@ -129,22 +128,20 @@ class ViTPoseApp(ctk.CTk):
         # Fallback if wholebody doesn't exist
         dataset = 'wholebody'
         if not os.path.exists(model_path):
-            self.overlay_text = f"DOWNLOADING {size.upper()} MODEL... THIS MAY TAKE A WHILE"
-            self.status_label.configure(text=f"Downloading {size.upper()} model... (Large!)")
+            self.status_label.configure(text=f"Downloading {size.upper()} model...\n(Can take minutes)", text_color="orange", font=ctk.CTkFont(size=16, weight="bold"))
             print(f"Downloading {model_filename} into models/ directory...")
             try:
                 url = f"https://huggingface.co/JunkyByte/easy_ViTPose/resolve/main/torch/wholebody/{model_filename}"
                 urllib.request.urlretrieve(url, model_path)
-                self.status_label.configure(text="Download complete!")
-                self.overlay_text = f"LOADING {size.upper()} INTO MEMORY..."
+                self.status_label.configure(text=f"Download complete!\nLoading {size.upper()}...", text_color="orange", font=ctk.CTkFont(size=16, weight="bold"))
             except Exception as e:
                 print(f"Failed to download model: {e}")
-                self.status_label.configure(text="Download failed, using COCO.")
+                self.status_label.configure(text="Download failed, using COCO.", text_color="red")
                 model_path = os.path.join(models_dir, 'vitpose-s-coco.pth')
                 dataset = 'coco'
                 size = 's'
         else:
-            self.overlay_text = f"LOADING {size.upper()} INTO MEMORY..."
+            self.status_label.configure(text=f"Loading {size.upper()} into memory...", text_color="orange", font=ctk.CTkFont(size=16, weight="bold"))
             
         yolo_path = os.path.join(models_dir, 'yolov8n.pt')
         old_yolo_path = os.path.join(base_dir, 'yolo8n.pt')
@@ -222,22 +219,6 @@ class ViTPoseApp(ctk.CTk):
                 keypoints_dict = {}
                 output_rgb = frame_rgb.copy()
                 
-                # Draw a large on-screen overlay so the user knows what is happening
-                overlay_msg = getattr(self, 'overlay_text', "LOADING MODEL...")
-                h, w = output_rgb.shape[:2]
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                
-                # Add a semi-transparent dark overlay to dim the background camera feed
-                overlay = output_rgb.copy()
-                cv2.rectangle(overlay, (0, 0), (w, h), (0, 0, 0), -1)
-                output_rgb = cv2.addWeighted(overlay, 0.7, output_rgb, 0.3, 0)
-                
-                # Draw centered glowing text
-                text_size = cv2.getTextSize(overlay_msg, font, 1.0, 3)[0]
-                text_x = (w - text_size[0]) // 2
-                text_y = (h + text_size[1]) // 2
-                cv2.putText(output_rgb, overlay_msg, (text_x, text_y), font, 1.0, (0, 255, 0), 3)
-                
             end_time = time.time()
             elapsed = end_time - start_time
             fps = 1.0 / elapsed if elapsed > 0 else 0.0
@@ -292,8 +273,9 @@ class ViTPoseApp(ctk.CTk):
                     
                     self.video_label.configure(image=ctk_img)
             
-            # Update status
-            self.status_label.configure(text=f"Running | FPS: {fps:.1f}")
+            # Update status only if model is loaded (otherwise leave loading text)
+            if self.model is not None:
+                self.status_label.configure(text=f"Running | FPS: {fps:.1f}", text_color="white", font=ctk.CTkFont(size=13))
             
         self.after(30, self._update_video_frame)
 
@@ -336,6 +318,11 @@ class ViTPoseApp(ctk.CTk):
             proc.wait()
         except Exception as e:
             print(f"Error closing FFmpeg: {e}")
+        finally:
+            # Let the UI know the video was successfully written to disk
+            self.rec_status_label.configure(text="Video Saved Successfully!", text_color="#00FF00")
+            # Clear the message after 3 seconds
+            self.after(3000, lambda: self.rec_status_label.configure(text="Not Recording", text_color="gray"))
 
     def toggle_recording(self):
         with self.lock:
@@ -403,7 +390,7 @@ class ViTPoseApp(ctk.CTk):
                     self.csv_file = None
                     self.csv_writer = None
                 self.record_btn.configure(text="Start Recording", fg_color="green", hover_color="darkgreen")
-                self.rec_status_label.configure(text="Not Recording", text_color="gray")
+                self.rec_status_label.configure(text="Saving Video...", text_color="orange")
                 self.rec_info_label.configure(text="")
 
     def on_closing(self):
