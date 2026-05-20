@@ -1,0 +1,25 @@
+# ViTPose Studio - Gitignore
+
+# Model weights
+models/*.pth
+models/*.pt
+
+# Output data
+output/
+*.mp4
+*.csv
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
