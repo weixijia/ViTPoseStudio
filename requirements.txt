@@ -1,0 +1,11 @@
+customtkinter
+Pillow
+torch
+torchvision
+numpy
+opencv-python
+ultralytics
+filterpy
+scipy
+matplotlib
+scikit-image

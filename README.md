@@ -12,8 +12,12 @@ ViTPose Studio is a completely overhauled, modern Mac-native desktop application
 - **FFmpeg**: Must be installed on your system (`brew install ffmpeg`).
 - **Python Dependencies**:
   ```bash
-  pip install customtkinter Pillow torch numpy opencv-python ultralytics
+  pip install -r requirements.txt
   ```
+
+## Quick Setup (AI Agent Prompt)
+If you are using an AI agent (like me) to deploy this repo for you, just copy and paste this exact prompt:
+> "Please help me set up the ViTPoseStudio repository on my Mac. 1. Check if `ffmpeg` is installed, if not, install it via `brew install ffmpeg`. 2. Run `pip install -r requirements.txt` to install all dependencies. 3. Once installed, run `python main.py` to launch the application and let me know if there are any errors."
 
 ## Usage
 Simply run the main application file from within your environment:
