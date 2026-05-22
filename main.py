@@ -21,7 +21,7 @@ class ViTPoseApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("ViTPose Studio")
+        self.title("VP Mirror")
         self.geometry("1100x700")
         
         # Configure grid layout (1x2)
@@ -60,7 +60,7 @@ class ViTPoseApp(ctk.CTk):
         self.sidebar_frame.grid_rowconfigure(6, weight=1)
         
         # Title
-        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="ViTPose Studio", font=ctk.CTkFont(size=24, weight="bold"))
+        self.logo_label = ctk.CTkLabel(self.sidebar_frame, text="VP Mirror", font=ctk.CTkFont(size=24, weight="bold"))
         self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
         
         # Recording Controls
