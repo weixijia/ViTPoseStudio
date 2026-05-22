@@ -9,9 +9,9 @@ import torch
 
 from ultralytics import YOLO
 
-from .configs.ViTPose_common import data_cfg
+from .configs.vpmirror_common import data_cfg
 from .sort import Sort
-from .vit_models.model import ViTPose
+from .vit_models.model import VPMirrorModel
 from .vit_utils.inference import draw_bboxes, pad_image
 from .vit_utils.top_down_eval import keypoints_from_heatmaps
 from .vit_utils.util import dyn_model_import, infer_dataset_by_path
@@ -51,7 +51,7 @@ DETC_TO_YOLO_YOLOC = {
 
 class VitInference:
     """
-    Class for performing inference using ViTPose models with YOLOv8 human detection and SORT tracking.
+    Class for performing inference using VP Mirror models with YOLOv8 human detection and SORT tracking.
 
     Args:
         model (str): Path to the ViT model file (.pth, .onnx, .engine).
@@ -164,7 +164,7 @@ class VitInference:
                                                                         'CPUExecutionProvider'])
             inf_fn = self._inference_onnx
         else:
-            self._vit_pose = ViTPose(model_cfg)
+            self._vit_pose = VPMirrorModel(model_cfg)
             self._vit_pose.eval()
 
             if use_trt:

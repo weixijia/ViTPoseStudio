@@ -17,12 +17,12 @@ from vit_utils.util import init_random_seed, set_random_seed
 from vit_utils.dist_util import get_dist_info, init_dist
 from vit_utils.logging import get_root_logger
 
-import configs.ViTPose_small_coco_256x192 as s_cfg
-import configs.ViTPose_base_coco_256x192 as b_cfg
-import configs.ViTPose_large_coco_256x192 as l_cfg
-import configs.ViTPose_huge_coco_256x192 as h_cfg
+import configs.vpmirror_small_coco_256x192 as s_cfg
+import configs.vpmirror_base_coco_256x192 as b_cfg
+import configs.vpmirror_large_coco_256x192 as l_cfg
+import configs.vpmirror_huge_coco_256x192 as h_cfg
 
-from vit_models.model import ViTPose
+from vit_models.model import VPMirrorModel
 from datasets.COCO import COCODataset
 from vit_utils.train_valid_fn import train_model
 
@@ -107,7 +107,7 @@ def main(config_path, model_name):
     meta['seed'] = seed
 
     # Set model
-    model = ViTPose(cfg.model)
+    model = VPMirrorModel(cfg.model)
     if cfg.resume_from:
         # Load ckpt partially
         ckpt_state = torch.load(cfg.resume_from)['state_dict']

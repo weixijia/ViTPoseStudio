@@ -10,14 +10,14 @@ import subprocess
 import platform
 from PIL import Image
 
-# easy_ViTPose is bundled locally in the standalone repository
-from easy_ViTPose import VitInference
+# vp_mirror_engine is bundled locally in the standalone repository
+from vp_mirror_engine import VitInference
 
 # Basic configuration
 ctk.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 ctk.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
-class ViTPoseApp(ctk.CTk):
+class VPMirrorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
@@ -435,6 +435,6 @@ class ViTPoseApp(ctk.CTk):
         self.destroy()
         
 if __name__ == "__main__":
-    app = ViTPoseApp()
+    app = VPMirrorApp()
     app.protocol("WM_DELETE_WINDOW", app.on_closing)
     app.mainloop()

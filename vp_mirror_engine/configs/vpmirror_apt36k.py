@@ -1,4 +1,4 @@
-from .ViTPose_common import *
+from .vpmirror_common import *
 
 # Channel configuration
 channel_cfg = dict(
