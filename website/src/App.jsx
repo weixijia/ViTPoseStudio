@@ -44,7 +44,9 @@ function LangSwitcher({ lang, setLang }) {
   return (
     <div className="lang-switcher" ref={ref}>
       <button className="lang-switcher__btn" onClick={() => setOpen(!open)}>
+        <span>🌐</span>
         <span>{current.label}</span>
+        <span style={{ fontSize: '10px', opacity: 0.6 }}>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
         <div className="lang-switcher__dropdown">
