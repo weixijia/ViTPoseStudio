@@ -1,66 +1,176 @@
-import React from 'react';
-import './index.css';
+import React, { useEffect, useRef, useState, createContext, useContext } from 'react'
+import { languages, getTranslation } from './i18n'
+import './index.css'
+import './App.css'
 
-function App() {
+const LangContext = createContext('en')
+
+function useLang() {
+  return useContext(LangContext)
+}
+
+function useT() {
+  const lang = useLang()
+  return getTranslation(lang)
+}
+
+function useInView(threshold = 0.15) {
+  const ref = useRef(null)
+  const [isVisible, setVisible] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect() } },
+      { threshold }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [threshold])
+  return [ref, isVisible]
+}
+
+function LangSwitcher({ lang, setLang }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const current = languages.find(l => l.code === lang) || languages[0]
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
   return (
-    <div className="container">
-      <header className="header">
-        <div className="logo">VP Mirror</div>
-        <nav className="nav-links">
-          <a href="#features">Features</a>
-          <a href="#citation">Citation</a>
-          <a href="https://github.com/weixijia/ViTPoseStudio">GitHub</a>
-        </nav>
-      </header>
+    <div className="lang-switcher" ref={ref}>
+      <button className="lang-switcher__btn" onClick={() => setOpen(!open)}>
+        <span>{current.label}</span>
+      </button>
+      {open && (
+        <div className="lang-switcher__dropdown">
+          {languages.map(l => (
+            <button
+              key={l.code}
+              className={`lang-switcher__item ${l.code === lang ? 'lang-switcher__item--active' : ''}`}
+              onClick={() => { setLang(l.code); setOpen(false) }}
+            >
+              <span>{l.flag}</span> {l.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
-      <main>
-        <section className="hero">
-          <div className="badge">v1.0 is now live ✨</div>
-          <h1>Real-Time Skeleton<br/>Pose Estimation</h1>
-          <p>
-            A distilled, lightweight version of our comprehensive multimodal data collection platform, Vomee. 
-            Experience seamless RGB-based visual motion capture with a beautiful GUI.
-          </p>
-          <a href="https://github.com/weixijia/ViTPoseStudio" className="cta-button">
-            View on GitHub
-          </a>
-          
-          <img 
-            src="/ViTPoseStudio/hero.png" 
-            alt="VP Mirror Dashboard Interface" 
-            className="hero-image"
-            onError={(e) => {
-              e.target.src = "hero.png"; // Fallback for local development
-            }}
-          />
-        </section>
+function Nav({ lang, setLang }) {
+  const [scrolled, setScrolled] = useState(false)
+  const t = useT()
 
-        <section id="features" className="features">
-          <div className="feature-card">
-            <div className="feature-icon">🧍</div>
-            <h3>Wholebody Detection</h3>
-            <p>Automatically detects full facial mesh, detailed finger joints, and full body skeletons using the vitpose-s-wholebody model.</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">⚡</div>
-            <h3>Real-Time Inference</h3>
-            <p>Powered by YOLOv8 human detection and SORT tracking, optimized for lightning-fast performance across devices.</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">💻</div>
-            <h3>Cross-Platform</h3>
-            <p>Fully compatible with Windows, macOS, and Linux out of the box. Zero painful configuration needed.</p>
-          </div>
-        </section>
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 40)
+    window.addEventListener('scroll', handler, { passive: true })
+    return () => window.removeEventListener('scroll', handler)
+  }, [])
 
-        <section id="citation" className="citation">
-          <div className="citation-inner">
-            <h2>Backed by Academic Research</h2>
-            <p>
-              VP Mirror is distilled from our multimodal data collection platform, <strong>Vomee</strong>. 
-              If you use our tool in your research, please cite our paper:
-            </p>
-            <div className="bibtex">
+  return (
+    <nav className={`nav ${scrolled ? 'nav--scrolled' : ''}`}>
+      <div className="nav__inner">
+        <a href="#" className="nav__logo">VP Mirror</a>
+        <div className="nav__links">
+          <a href="#features">{t.nav.features}</a>
+          <a href="#howitworks">{t.nav.howItWorks}</a>
+          <a href="#citation">{t.nav.citation}</a>
+          <a href="https://github.com/weixijia/ViTPoseStudio">{t.nav.github}</a>
+          <LangSwitcher lang={lang} setLang={setLang} />
+        </div>
+      </div>
+    </nav>
+  )
+}
+
+function Hero() {
+  const t = useT()
+  return (
+    <section className="hero">
+      <div className="hero__bg-glow" />
+      <div className="container fade-up">
+        <div className="hero__badge">{t.hero.badge}</div>
+        <h1>
+          {t.hero.title1} <br/> <span className="accent">{t.hero.title2}</span>
+        </h1>
+        <p>
+          {t.hero.subtitle1} <br/> {t.hero.subtitle2}
+        </p>
+        <a href="https://github.com/weixijia/ViTPoseStudio" className="btn">
+          {t.hero.btnDownload}
+        </a>
+      </div>
+    </section>
+  )
+}
+
+function Features() {
+  const [ref, visible] = useInView()
+  const t = useT()
+  
+  return (
+    <section id="features" className="section-padding" ref={ref}>
+      <div className="container">
+        <div className={`section-header ${visible ? 'fade-up' : 'pre-fade'}`}>
+          <h2>{t.features.title1} <br/> <span className="accent">{t.features.title2}</span></h2>
+          <p>{t.features.subtitle}</p>
+        </div>
+        <div className="grid-3">
+          {t.features.items.map((item, i) => (
+            <div key={i} className={`glass-card ${visible ? 'fade-up' : 'pre-fade'}`} style={{ animationDelay: `${0.1 * i + 0.1}s` }}>
+              <div className="feature-icon">{item.icon}</div>
+              <h3>{item.title}</h3>
+              <p>{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function HowItWorks() {
+  const [ref, visible] = useInView()
+  const t = useT()
+
+  return (
+    <section id="howitworks" className="section-padding" ref={ref}>
+      <div className="container">
+        <div className={`section-header ${visible ? 'fade-up' : 'pre-fade'}`}>
+          <h2>{t.howItWorks.title1} <br/> <span className="accent">{t.howItWorks.title2}</span></h2>
+          <p>{t.howItWorks.subtitle}</p>
+        </div>
+        <div className="grid-3">
+          {t.howItWorks.cards.map((card, i) => (
+            <div key={i} className={`glass-card ${visible ? 'fade-up' : 'pre-fade'}`} style={{ animationDelay: `${0.1 * i + 0.1}s` }}>
+              <span className="step-number">{card.step}</span>
+              <h3>{card.title}</h3>
+              <p>{card.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Citation() {
+  const [ref, visible] = useInView()
+  const t = useT()
+
+  return (
+    <section id="citation" className="section-padding" ref={ref}>
+      <div className="container">
+        <div className={`citation-box ${visible ? 'fade-up' : 'pre-fade'}`}>
+          <h2>{t.citation.title1}</h2>
+          <p>{t.citation.subtitle}</p>
+          <div className="bibtex-code">
 {`@inproceedings{10.1145/3737904.3768536,
   author = {Wei, Xijia and Fang, Yuan and Chetty, Kevin and Cho, Youngjun and Bianchi-Berthouze, Nadia},
   title = {Vomee: A Multimodal Sensing Platform for Video, Audio, mmWave and Skeleton Data Capturing},
@@ -73,16 +183,48 @@ function App() {
   booktitle = {Proceedings of the 2025 ACM Workshop on Access Networks with Artificial Intelligence},
   pages = {36--40}
 }`}
-            </div>
           </div>
-        </section>
-      </main>
-
-      <footer className="footer">
-        <p>© 2025 Xijia Wei. Released under the MIT License.</p>
-      </footer>
-    </div>
-  );
+        </div>
+      </div>
+    </section>
+  )
 }
 
-export default App;
+function Footer() {
+  const t = useT()
+  return (
+    <footer className="footer">
+      <div className="container">
+        <div className="footer__links">
+          {t.footer.links.map((link, i) => (
+            <a key={i} href="#">{link}</a>
+          ))}
+        </div>
+        <p className="footer__copy">{t.footer.copyright}</p>
+      </div>
+    </footer>
+  )
+}
+
+export default function App() {
+  const [lang, setLang] = useState(() => {
+    const saved = localStorage.getItem('vpmirror-lang')
+    if (saved && languages.some(l => l.code === saved)) return saved
+    const browserLang = navigator.language.toLowerCase()
+    if (browserLang.startsWith('zh')) return 'cn'
+    return 'en'
+  })
+
+  useEffect(() => { localStorage.setItem('vpmirror-lang', lang) }, [lang])
+
+  return (
+    <LangContext.Provider value={lang}>
+      <Nav lang={lang} setLang={setLang} />
+      <Hero />
+      <Features />
+      <HowItWorks />
+      <Citation />
+      <Footer />
+    </LangContext.Provider>
+  )
+}
