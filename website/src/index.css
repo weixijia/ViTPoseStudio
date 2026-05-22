@@ -1,18 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
-  --bg-pure: #000000;
-  --bg-surface: #0a0a0a;
-  --bg-elevated: #111111;
-  --text-primary: #f5f5f7;
-  --text-secondary: #86868b;
-  --text-tertiary: #515154;
+  --bg-pure: #030712;
+  --bg-surface: #0f172a;
+  --bg-elevated: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-tertiary: #64748b;
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: rgba(0, 0, 0, 0.5);
-  --accent-primary: #2997ff;
-  --accent-secondary: #ff3b30;
-  --accent-glow: rgba(41, 151, 255, 0.15);
+  --accent-primary: #3b82f6;
+  --accent-secondary: #8b5cf6;
+  --accent-glow: rgba(59, 130, 246, 0.15);
 }
 
 * {
@@ -64,4 +64,21 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 5%;
+}
+
+/* Interactive Background Glow */
+.interactive-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(
+    800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(59, 130, 246, 0.08),
+    transparent 50%
+  );
+  transition: opacity 0.3s ease;
 }

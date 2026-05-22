@@ -217,8 +217,18 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem('vpmirror-lang', lang) }, [lang])
 
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`)
+      document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`)
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [])
+
   return (
     <LangContext.Provider value={lang}>
+      <div className="interactive-glow" />
       <Nav lang={lang} setLang={setLang} />
       <Hero />
       <Features />
