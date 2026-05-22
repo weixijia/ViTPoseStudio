@@ -14,7 +14,7 @@ const translations = {
     hero: {
       badge: 'v1.0 is now live ✨',
       title1: 'Real-Time Skeleton',
-      title2: 'Pose Estimation.',
+      title2: 'Pose Estimation',
       subtitle1: 'A distilled, lightweight version of our comprehensive multimodal data collection platform, Vomee.',
       subtitle2: 'Experience seamless RGB-based visual motion capture with a beautiful GUI.',
       btnDownload: 'View on GitHub',
@@ -68,8 +68,8 @@ const translations = {
       title2: 'Contributors.',
       subtitle: 'VP Mirror is proudly maintained by researchers from University College London (UCL).',
       members: [
-        { name: 'Xijia Wei (魏熙佳)', email: 'xijia.wei.21@ucl.ac.uk' },
-        { name: 'Yifu Liu (刘一夫)', email: 'yifu.liu.22@ucl.ac.uk' }
+        { name: 'Xijia Wei', email: 'xijia.wei.21@ucl.ac.uk' },
+        { name: 'Yifu Liu', email: 'yifu.liu.22@ucl.ac.uk' }
       ]
     },
     citation: {
@@ -143,10 +143,10 @@ const translations = {
     contributors: {
       title1: '核心团队。',
       title2: '贡献者。',
-      subtitle: 'VP Mirror 由伦敦大学学院 (UCL) 的研究人员自豪地开发和维护。',
+      subtitle: 'VP Mirror 由伦敦大学学院 (UCL) 的研究人员开发和维护。',
       members: [
-        { name: 'Xijia Wei (魏熙佳)', email: 'xijia.wei.21@ucl.ac.uk' },
-        { name: 'Yifu Liu (刘一夫)', email: 'yifu.liu.22@ucl.ac.uk' }
+        { name: '魏熙佳', email: 'xijia.wei.21@ucl.ac.uk' },
+        { name: '刘一夫', email: 'yifu.liu.22@ucl.ac.uk' }
       ]
     },
     citation: {

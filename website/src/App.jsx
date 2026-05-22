@@ -44,8 +44,7 @@ function LangSwitcher({ lang, setLang }) {
   return (
     <div className="lang-switcher" ref={ref}>
       <button className="lang-switcher__btn" onClick={() => setOpen(!open)}>
-        <span>🌐</span>
-        <span>{current.label}</span>
+        <span style={{ fontSize: '16px' }}>{current.flag}</span>
         <span style={{ fontSize: '10px', opacity: 0.6 }}>{open ? '▲' : '▼'}</span>
       </button>
       {open && (
@@ -54,9 +53,10 @@ function LangSwitcher({ lang, setLang }) {
             <button
               key={l.code}
               className={`lang-switcher__item ${l.code === lang ? 'lang-switcher__item--active' : ''}`}
+              style={{ justifyContent: 'center' }}
               onClick={() => { setLang(l.code); setOpen(false) }}
             >
-              <span>{l.flag}</span> {l.label}
+              <span style={{ fontSize: '18px' }}>{l.flag}</span>
             </button>
           ))}
         </div>
@@ -219,12 +219,11 @@ function Contributors() {
           <h2>{t.contributors.title1} <br/> <span className="accent">{t.contributors.title2}</span></h2>
           <p>{t.contributors.subtitle}</p>
         </div>
-        <div className="grid-3" style={{ justifyContent: 'center', display: 'flex', flexWrap: 'wrap' }}>
+        <div className="grid-3" style={{ justifyContent: 'center', display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
           {t.contributors.members.map((member, i) => (
-            <div key={i} className={`glass-card ${visible ? 'fade-up' : 'pre-fade'}`} style={{ animationDelay: `${0.1 * i + 0.1}s`, minWidth: '300px', textAlign: 'center' }}>
-              <div className="feature-icon" style={{ margin: '0 auto 24px', fontSize: '40px' }}>👨‍💻</div>
-              <h3>{member.name}</h3>
-              <p><a href={`mailto:${member.email}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>{member.email}</a></p>
+            <div key={i} className={`glass-card ${visible ? 'fade-up' : 'pre-fade'}`} style={{ animationDelay: `${0.1 * i + 0.1}s`, minWidth: '260px', padding: '24px 30px', textAlign: 'center' }}>
+              <h3 style={{ fontSize: '18px', marginBottom: '4px' }}>{member.name}</h3>
+              <p style={{ fontSize: '14px' }}><a href={`mailto:${member.email}`} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{member.email}</a></p>
             </div>
           ))}
         </div>
