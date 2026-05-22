@@ -21,7 +21,7 @@ class VPMirrorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("VP Mirror")
+        self.title("VP Mirror Verson 1.0")
         self.geometry("1100x700")
         
         # Configure grid layout (1x2)
