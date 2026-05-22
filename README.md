@@ -7,6 +7,8 @@
     <a href="https://github.com/weixijia/ViTPoseStudio/pulls"><img src="https://img.shields.io/github/issues-pr/weixijia/ViTPoseStudio" alt="Pull Requests Badge"/></a>
     <a href="https://github.com/weixijia/ViTPoseStudio/issues"><img src="https://img.shields.io/github/issues/weixijia/ViTPoseStudio" alt="Issues Badge"/></a>
   </p>
+  
+  <h3>🌐 <a href="https://xijiawei.com/ViTPoseStudio/">Visit the Official Website</a></h3>
 </div>
 
 <br/>
@@ -18,7 +20,8 @@
 ## ✨ Key Features
 
 - 🖥️ **Modern Cross-Platform UI**: A sleek, fully-responsive dark-mode interface with a side control panel and live camera preview. Works seamlessly on **Windows, macOS, and Linux**.
-- 🧍 **Wholebody Detection**: Automatically detects full facial mesh, detailed finger joints, and full body skeletons using the `vitpose-s-wholebody` model. *(Auto-downloads on first launch!)*
+- 🧍 **Wholebody Detection**: Automatically detects full facial mesh, detailed finger joints, and full body skeletons using the state-of-the-art `vitpose-s-wholebody` model. *(Auto-downloads on first launch!)*
+- ⚡ **Real-Time Inference Pipeline**: Powered by **YOLOv8** for rapid human bounding box detection, **SORT** for multi-person temporal tracking, and **ViTPose** for precise 2D keypoint extraction.
 - 🎬 **Synchronized AV Recording Engine**: Uses a robust FFmpeg integration to perfectly synchronize live audio (from your system's microphone) with the skeleton-overlaid video. Handles hardware frame-rate jitter effortlessly by zero-padding to a strict 30 FPS.
 - 📊 **CSV Data Collection**: Every time you hit record, a synchronized `.csv` dataset is generated containing frame-by-frame data for all tracking keypoints, perfectly matched to the `.mp4` video timeline.
 
