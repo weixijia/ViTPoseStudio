@@ -63,6 +63,15 @@ const translations = {
         }
       ]
     },
+    contributors: {
+      title1: 'Meet the Team.',
+      title2: 'Contributors.',
+      subtitle: 'VP Mirror is proudly maintained by researchers from University College London (UCL).',
+      members: [
+        { name: 'Xijia Wei (魏熙佳)', email: 'xijia.wei.21@ucl.ac.uk' },
+        { name: 'Yifu Liu (刘一夫)', email: 'yifu.liu.22@ucl.ac.uk' }
+      ]
+    },
     citation: {
       title1: 'Backed by Academic Research.',
       subtitle: 'VP Mirror is distilled from our multimodal data collection platform, Vomee. If you use our tool in your research, please cite our paper:',
@@ -129,6 +138,15 @@ const translations = {
           title: 'ViTPose 姿态分析',
           desc: '最后，ViTPose 引擎对裁剪后的人体区域进行深度分析，提取极其精确的 2D 关键点和骨骼结构。'
         }
+      ]
+    },
+    contributors: {
+      title1: '核心团队。',
+      title2: '贡献者。',
+      subtitle: 'VP Mirror 由伦敦大学学院 (UCL) 的研究人员自豪地开发和维护。',
+      members: [
+        { name: 'Xijia Wei (魏熙佳)', email: 'xijia.wei.21@ucl.ac.uk' },
+        { name: 'Yifu Liu (刘一夫)', email: 'yifu.liu.22@ucl.ac.uk' }
       ]
     },
     citation: {

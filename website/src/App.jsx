@@ -208,6 +208,31 @@ function Footer() {
   )
 }
 
+function Contributors() {
+  const [ref, visible] = useInView()
+  const t = useT()
+
+  return (
+    <section id="contributors" className="section-padding" ref={ref}>
+      <div className="container">
+        <div className={`section-header ${visible ? 'fade-up' : 'pre-fade'}`}>
+          <h2>{t.contributors.title1} <br/> <span className="accent">{t.contributors.title2}</span></h2>
+          <p>{t.contributors.subtitle}</p>
+        </div>
+        <div className="grid-3" style={{ justifyContent: 'center', display: 'flex', flexWrap: 'wrap' }}>
+          {t.contributors.members.map((member, i) => (
+            <div key={i} className={`glass-card ${visible ? 'fade-up' : 'pre-fade'}`} style={{ animationDelay: `${0.1 * i + 0.1}s`, minWidth: '300px', textAlign: 'center' }}>
+              <div className="feature-icon" style={{ margin: '0 auto 24px', fontSize: '40px' }}>👨‍💻</div>
+              <h3>{member.name}</h3>
+              <p><a href={`mailto:${member.email}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>{member.email}</a></p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function App() {
   const [lang, setLang] = useState(() => {
     const saved = localStorage.getItem('vpmirror-lang')
@@ -235,6 +260,7 @@ export default function App() {
       <Hero />
       <Features />
       <HowItWorks />
+      <Contributors />
       <Citation />
       <Footer />
     </LangContext.Provider>
