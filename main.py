@@ -7,6 +7,7 @@ import os
 import sys
 import csv
 import subprocess
+import platform
 from PIL import Image
 
 # easy_ViTPose is bundled locally in the standalone repository
@@ -20,7 +21,7 @@ class ViTPoseApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("ViTPose Studio (Mac Native)")
+        self.title("ViTPose Studio")
         self.geometry("1100x700")
         
         # Configure grid layout (1x2)
@@ -337,6 +338,7 @@ class ViTPoseApp(ctk.CTk):
                 if self.latest_frame_bgr is not None:
                     h, w, _ = self.latest_frame_bgr.shape
                     
+                    sys_os = platform.system()
                     cmd = [
                         'ffmpeg', '-y',
                         '-f', 'rawvideo',
@@ -345,14 +347,38 @@ class ViTPoseApp(ctk.CTk):
                         '-pix_fmt', 'bgr24',
                         '-r', '30',
                         '-i', '-',
-                        '-f', 'avfoundation',
-                        '-i', ':0',
+                    ]
+                    
+                    if sys_os == 'Darwin':
+                        cmd.extend(['-f', 'avfoundation', '-i', ':0', '-c:a', 'aac', '-shortest'])
+                    elif sys_os == 'Linux':
+                        cmd.extend(['-f', 'pulse', '-i', 'default', '-c:a', 'aac', '-shortest'])
+                    elif sys_os == 'Windows':
+                        try:
+                            # Hide console window on Windows
+                            CREATE_NO_WINDOW = 0x08000000
+                            result = subprocess.run(['ffmpeg', '-list_devices', 'true', '-f', 'dshow', '-i', 'dummy'], 
+                                                    stderr=subprocess.PIPE, text=True, encoding='utf-8', creationflags=CREATE_NO_WINDOW)
+                            in_audio = False
+                            audio_dev = None
+                            for line in result.stderr.split('\n'):
+                                if "DirectShow audio devices" in line:
+                                    in_audio = True
+                                elif "DirectShow video devices" in line:
+                                    in_audio = False
+                                elif in_audio and '"' in line:
+                                    audio_dev = line.split('"')[1]
+                                    break
+                            if audio_dev:
+                                cmd.extend(['-f', 'dshow', '-i', f'audio={audio_dev}', '-c:a', 'aac', '-shortest'])
+                        except:
+                            pass
+                            
+                    cmd.extend([
                         '-c:v', 'libx264',
                         '-preset', 'ultrafast',
-                        '-c:a', 'aac',
-                        '-shortest', # Automatically stops audio when video stream (stdin) ends
                         filename
-                    ]
+                    ])
                     
                     self.ffmpeg_proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
                     
