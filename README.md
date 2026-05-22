@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🪞 VP Mirror</h1>
+  <h1>VP Mirror</h1>
   <p><strong>A Modern, Cross-Platform Desktop Application for Real-Time Skeleton Pose Estimation</strong></p>
   <p>
     <a href="https://github.com/weixijia/ViTPoseStudio/stargazers"><img src="https://img.shields.io/github/stars/weixijia/ViTPoseStudio" alt="Stars Badge"/></a>
