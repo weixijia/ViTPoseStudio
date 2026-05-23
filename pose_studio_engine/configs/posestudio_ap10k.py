@@ -1,4 +1,4 @@
-from .vpmirror_common import *
+from .posestudio_common import *
 
 # Channel configuration
 channel_cfg = dict(

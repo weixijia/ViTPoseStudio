@@ -35,7 +35,7 @@ def infer_dataset_by_path(model_path: str) -> Union[str, Any]:
 
 
 def dyn_model_import(dataset: str, model: str):
-    config_name = f'configs.vpmirror_{dataset}'
+    config_name = f'configs.posestudio_{dataset}'
     imp = import_module(config_name)
     model = f'model_{MODEL_ABBR_MAP[model]}'
     return getattr(imp, model)

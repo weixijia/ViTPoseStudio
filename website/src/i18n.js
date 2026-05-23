@@ -22,7 +22,7 @@ const translations = {
     features: {
       title1: 'High Precision',
       title2: 'Out-of-the-Box',
-      subtitle: 'VP Mirror is designed to run locally, bringing robust computer vision capabilities to your desktop without complex environment setup.',
+      subtitle: 'Pose Studio is designed to run locally, bringing robust computer vision capabilities to your desktop without complex environment setup.',
       items: [
         {
           icon: '🧍',
@@ -44,7 +44,7 @@ const translations = {
     howItWorks: {
       title1: 'System Architecture',
       title2: 'Under the hood',
-      subtitle: 'VP Mirror orchestrates a multi-stage neural network pipeline for reliable pose estimation.',
+      subtitle: 'Pose Studio orchestrates a multi-stage neural network pipeline for reliable pose estimation.',
       cards: [
         {
           step: '01',
@@ -65,9 +65,9 @@ const translations = {
     },
     citation: {
       title1: 'Academic References',
-      subtitleVomee: 'VP Mirror is derived from our multimodal data collection platform, Vomee. If you use our tool in your research, please consider citing our paper:',
+      subtitleVomee: 'Pose Studio is derived from our multimodal data collection platform, Vomee. If you use our tool in your research, please consider citing our paper:',
       subtitleVitpose: 'Our core skeleton extraction engine is built upon the incredible ViTPose foundation model. Please also acknowledge their pioneering work:',
-      subtitleYolo: 'VP Mirror also integrates Ultralytics YOLO26 for high-performance inference. Please cite their work if you use YOLO models:',
+      subtitleYolo: 'Pose Studio also integrates Ultralytics YOLO26 for high-performance inference. Please cite their work if you use YOLO models:',
     },
     footer: {
       brandDesc: 'A lightweight version of Vomee. Providing seamless RGB-based visual motion capture.',
@@ -111,7 +111,7 @@ const translations = {
     features: {
       title1: '高精度检测',
       title2: '开箱即用',
-      subtitle: 'VP Mirror 提供了开箱即用的体验，无需复杂的环境配置即可在桌面端运行计算机视觉算法。',
+      subtitle: 'Pose Studio 提供了开箱即用的体验，无需复杂的环境配置即可在桌面端运行计算机视觉算法。',
       items: [
         {
           icon: '🧍',
@@ -133,7 +133,7 @@ const translations = {
     howItWorks: {
       title1: '系统架构',
       title2: '技术原理',
-      subtitle: 'VP Mirror 并行调用多个神经网络模型，实现稳定的姿态估计管线。',
+      subtitle: 'Pose Studio 并行调用多个神经网络模型，实现稳定的姿态估计管线。',
       cards: [
         {
           step: '01',
@@ -154,9 +154,9 @@ const translations = {
     },
     citation: {
       title1: '学术引用',
-      subtitleVomee: 'VP Mirror 衍生自我们的多模态数据采集平台 Vomee。如果您在研究中使用了本工具，欢迎引用我们的论文：',
+      subtitleVomee: 'Pose Studio 衍生自我们的多模态数据采集平台 Vomee。如果您在研究中使用了本工具，欢迎引用我们的论文：',
       subtitleVitpose: '本项目的核心骨骼特征提取基于优秀的 ViTPose 基础模型。也请在研究中致谢他们的开创性工作：',
-      subtitleYolo: 'VP Mirror 同时集成了极致性能的 Ultralytics YOLO26 推理引擎。如果您使用了 YOLO 模型，也请引用他们的工作：',
+      subtitleYolo: 'Pose Studio 同时集成了极致性能的 Ultralytics YOLO26 推理引擎。如果您使用了 YOLO 模型，也请引用他们的工作：',
     },
     footer: {
       brandDesc: '基于 Vomee 打造的轻量级版本，提供流畅的 RGB 视觉动作捕捉体验。',

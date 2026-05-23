@@ -78,7 +78,7 @@ function Nav({ lang, setLang }) {
   return (
     <nav className={`nav ${scrolled ? 'nav--scrolled' : ''}`}>
       <div className="nav__inner">
-        <a href="#" className="nav__logo">VP Mirror</a>
+        <a href="#" className="nav__logo">Pose Studio</a>
         <div className="nav__links">
           <a href="#features">{t.nav.features}</a>
           <a href="#howitworks">{t.nav.howItWorks}</a>
@@ -248,7 +248,7 @@ function Footer() {
       <div className="container">
         <div className="footer-grid">
           <div className="footer-brand">
-            <div className="footer-logo">VP Mirror</div>
+            <div className="footer-logo">Pose Studio</div>
             <p className="footer-desc">{t.footer.brandDesc}</p>
             <p className="footer-copy">{t.footer.copyright}</p>
           </div>
@@ -272,14 +272,14 @@ function Footer() {
 
 export default function App() {
   const [lang, setLang] = useState(() => {
-    const saved = localStorage.getItem('vpmirror-lang')
+    const saved = localStorage.getItem('posestudio-lang')
     if (saved && languages.some(l => l.code === saved)) return saved
     const browserLang = navigator.language.toLowerCase()
     if (browserLang.startsWith('zh')) return 'cn'
     return 'en'
   })
 
-  useEffect(() => { localStorage.setItem('vpmirror-lang', lang) }, [lang])
+  useEffect(() => { localStorage.setItem('posestudio-lang', lang) }, [lang])
 
   useEffect(() => {
     const handleMouseMove = (e) => {

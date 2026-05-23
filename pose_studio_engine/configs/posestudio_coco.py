@@ -1,11 +1,11 @@
-from .vpmirror_common import *
+from .posestudio_common import *
 
 # Channel configuration
 channel_cfg = dict(
-    num_output_channels=16,
-    dataset_joints=16,
-    dataset_channel=list(range(16)),
-    inference_channel=list(range(16)))
+    num_output_channels=17,
+    dataset_joints=17,
+    dataset_channel=list(range(17)),
+    inference_channel=list(range(17)))
 
 # Set models channels
 data_cfg['num_output_channels'] = channel_cfg['num_output_channels']

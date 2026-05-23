@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>VP Mirror</h1>
+  <h1>Pose Studio</h1>
   <p><strong>A Modern, Cross-Platform Desktop Application for Real-Time Skeleton Pose Estimation</strong></p>
   <p>
     <a href="https://github.com/weixijia/ViTPoseStudio/stargazers"><img src="https://img.shields.io/github/stars/weixijia/ViTPoseStudio" alt="Stars Badge"/></a>
@@ -13,7 +13,7 @@
 
 <br/>
 
-**VP Mirror** is a distilled, lightweight version of our comprehensive multimodal data collection platform, [**Vomee**](https://doi.org/10.1145/3737904.3768536). While Vomee handles complex multimodal sensing (Video, Audio, mmWave, and Skeleton Data), **VP Mirror** is specifically designed to focus on **RGB-based visual motion capture**. It extracts the foundational capabilities of the ViTPose engine and pairs them with a beautiful graphical user interface built with `PySide6` (Qt for Python), providing seamless, out-of-the-box human pose estimation and synchronization functions for your daily research or creative needs.
+**Pose Studio** is a distilled, lightweight version of our comprehensive multimodal data collection platform, [**Vomee**](https://doi.org/10.1145/3737904.3768536). While Vomee handles complex multimodal sensing (Video, Audio, mmWave, and Skeleton Data), **Pose Studio** is specifically designed to focus on **RGB-based visual motion capture**. It extracts the foundational capabilities of the ViTPose engine and pairs them with a beautiful graphical user interface built with `PySide6` (Qt for Python), providing seamless, out-of-the-box human pose estimation and synchronization functions for your daily research or creative needs.
 
 ---
 
@@ -59,7 +59,7 @@ Before you start, make sure you have FFmpeg installed on your machine:
 
 If you are using an AI coding assistant (like GitHub Copilot, Cursor, or Gemini) to deploy this repo for you, just copy and paste this exact prompt into the chat:
 
-> "Please help me set up the VP Mirror repository on my computer. 1. Detect my OS (Windows/Linux/macOS) and install `ffmpeg` if it's missing (e.g. via `brew`, `apt`, or `winget`). 2. Run `pip install -r requirements.txt` to install all Python dependencies. 3. Once installed, run `python main.py` to launch the application and let me know if there are any errors."
+> "Please help me set up the Pose Studio repository on my computer. 1. Detect my OS (Windows/Linux/macOS) and install `ffmpeg` if it's missing (e.g. via `brew`, `apt`, or `winget`). 2. Run `pip install -r requirements.txt` to install all Python dependencies. 3. Once installed, run `python main.py` to launch the application and let me know if there are any errors."
 
 ---
 
@@ -72,16 +72,16 @@ When you press **"Stop Recording"**, your data will be saved inside the automati
 - 📈 `recording_<timestamp>.csv` (Raw Tracking Keypoints Data)
 
 ### 🐞 Troubleshooting & Debug Mode
-If you encounter crashes (like macOS `SIGBUS` errors) or unexpected behavior, VP Mirror includes a built-in debugging system:
+If you encounter crashes (like macOS `SIGBUS` errors) or unexpected behavior, Pose Studio includes a built-in debugging system:
 - **Enable Debug Log**: At the bottom of the left sidebar (under the Telemetry card), check the `Enable Debug Log` box.
-- **Log File**: The application will instantly start writing verbose lifecycle and error logs to `vp_mirror_debug.log` in the root directory.
+- **Log File**: The application will instantly start writing verbose lifecycle and error logs to `pose_studio_debug.log` in the root directory.
 - *(Note: Debug mode is turned off by default to preserve performance.)*
 
 ---
 
 ## 📚 Citation
 
-**VP Mirror** is a spin-off module from our core research platform, **Vomee**. If you find VP Mirror or Vomee helpful in your academic research, please consider citing our paper:
+**Pose Studio** is a spin-off module from our core research platform, **Vomee**. If you find Pose Studio or Vomee helpful in your academic research, please consider citing our paper:
 
 ```bibtex
 @inproceedings{10.1145/3737904.3768536,
@@ -101,7 +101,7 @@ If you encounter crashes (like macOS `SIGBUS` errors) or unexpected behavior, VP
 }
 ```
 
-VP Mirror also integrates **Ultralytics YOLO26** for high-performance end-to-end tracking. Please also consider citing their work if you utilize the YOLO engine:
+Pose Studio also integrates **Ultralytics YOLO26** for high-performance end-to-end tracking. Please also consider citing their work if you utilize the YOLO engine:
 
 ```bibtex
 @software{yolo26_ultralytics,

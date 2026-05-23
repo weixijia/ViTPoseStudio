@@ -16,7 +16,7 @@ logging.basicConfig(
     level=logging.WARNING,
     format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("vp_mirror_debug.log", mode='w', encoding='utf-8'),
+        logging.FileHandler("pose_studio_debug.log", mode='w', encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -27,8 +27,8 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer
 from PySide6.QtGui import QImage, QPixmap, QFont, QColor
 
-# vp_mirror_engine is bundled locally in the standalone repository
-from vp_mirror_engine import VitInference
+# pose_studio_engine is bundled locally in the standalone repository
+from pose_studio_engine import VitInference
 
 class YOLOPoseWrapper:
     def __init__(self, size="n", device="cpu"):
@@ -146,13 +146,13 @@ class CameraThread(QThread):
         self.running = False
         self.wait()
 
-class VPMirrorApp(QMainWindow):
+class PoseStudioApp(QMainWindow):
     model_status_signal = Signal(str, str)
     ffmpeg_finished_signal = Signal()
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("VP Mirror")
+        self.setWindowTitle("Pose Studio")
         self.setMinimumSize(1100, 700)
         
         self.model_status_signal.connect(self._update_model_status)
@@ -173,7 +173,7 @@ class VPMirrorApp(QMainWindow):
         self.record_start_time = 0
         self.record_frame_count = 0
         
-        logging.info("VPMirrorApp initializing UI and setting up threads...")
+        logging.info("PoseStudioApp initializing UI and setting up threads...")
         
         self._setup_ui()
         self._setup_styles()
@@ -213,7 +213,7 @@ class VPMirrorApp(QMainWindow):
         sidebar_layout.setSpacing(24)
         
         # Header
-        self.logo_label = QLabel("VP Mirror")
+        self.logo_label = QLabel("Pose Studio")
         self.logo_label.setObjectName("logo")
         self.logo_label.setAlignment(Qt.AlignLeft)
         sidebar_layout.addWidget(self.logo_label)
@@ -708,6 +708,6 @@ if __name__ == "__main__":
     font.setStyleHint(QFont.SansSerif)
     app.setFont(font)
     
-    window = VPMirrorApp()
+    window = PoseStudioApp()
     window.show()
     sys.exit(app.exec())

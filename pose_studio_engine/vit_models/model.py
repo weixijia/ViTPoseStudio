@@ -4,12 +4,12 @@ from .backbone.vit import ViT
 from .head.topdown_heatmap_simple_head import TopdownHeatmapSimpleHead
 
 
-__all__ = ['VPMirrorModel']
+__all__ = ['PoseStudioModel']
 
 
-class VPMirrorModel(nn.Module):
+class PoseStudioModel(nn.Module):
     def __init__(self, cfg: dict) -> None:
-        super(VPMirrorModel, self).__init__()
+        super(PoseStudioModel, self).__init__()
         
         backbone_cfg = {k: v for k, v in cfg['backbone'].items() if k != 'type'}
         head_cfg = {k: v for k, v in cfg['keypoint_head'].items() if k != 'type'}
