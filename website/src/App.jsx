@@ -195,40 +195,29 @@ function Citation() {
 function Footer() {
   const t = useT()
   return (
-    <footer className="footer">
+    <footer className="footer-modern">
       <div className="container">
-        <div className="footer__links">
-          {t.footer.links.map((link, i) => (
-            <a key={i} href="#">{link}</a>
-          ))}
+        <div className="footer-grid">
+          <div className="footer-brand">
+            <div className="footer-logo">VP Mirror</div>
+            <p className="footer-desc">{t.footer.brandDesc}</p>
+            <p className="footer-copy">{t.footer.copyright}</p>
+          </div>
+          <div className="footer-links-grid">
+            {t.footer.columns.map((col, i) => (
+              <div key={i} className="footer-column">
+                <h4 className="footer-col-title">{col.title}</h4>
+                <div className="footer-col-links">
+                  {col.links.map((link, j) => (
+                    <a key={j} href={link.href}>{link.label}</a>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="footer__copy">{t.footer.copyright}</p>
       </div>
     </footer>
-  )
-}
-
-function Contributors() {
-  const [ref, visible] = useInView()
-  const t = useT()
-
-  return (
-    <section id="contributors" className="section-padding" ref={ref}>
-      <div className="container">
-        <div className={`section-header ${visible ? 'fade-up' : 'pre-fade'}`}>
-          <h2>{t.contributors.title1} <br/> <span className="accent">{t.contributors.title2}</span></h2>
-          <p>{t.contributors.subtitle}</p>
-        </div>
-        <div className="grid-3" style={{ justifyContent: 'center', display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-          {t.contributors.members.map((member, i) => (
-            <div key={i} className={`glass-card ${visible ? 'fade-up' : 'pre-fade'}`} style={{ animationDelay: `${0.1 * i + 0.1}s`, minWidth: '260px', padding: '24px 30px', textAlign: 'center' }}>
-              <h3 style={{ fontSize: '18px', marginBottom: '4px' }}>{member.name}</h3>
-              <p style={{ fontSize: '14px' }}><a href={`mailto:${member.email}`} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{member.email}</a></p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
   )
 }
 
@@ -259,7 +248,6 @@ export default function App() {
       <Hero />
       <Features />
       <HowItWorks />
-      <Contributors />
       <Citation />
       <Footer />
     </LangContext.Provider>

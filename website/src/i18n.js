@@ -63,22 +63,38 @@ const translations = {
         }
       ]
     },
-    contributors: {
-      title1: 'Team',
-      title2: 'Contributors',
-      subtitle: 'Maintained by researchers from University College London (UCL).',
-      members: [
-        { name: 'Xijia Wei', email: 'xijia.wei.21@ucl.ac.uk' },
-        { name: 'Yifu Liu', email: 'yifu.liu.22@ucl.ac.uk' }
-      ]
-    },
     citation: {
       title1: 'Academic Reference',
       subtitle: 'VP Mirror is derived from our multimodal data collection platform, Vomee. If you use our tool in your research, please consider citing our paper:',
     },
     footer: {
+      brandDesc: 'A lightweight version of Vomee. Providing seamless RGB-based visual motion capture.',
       copyright: '© 2026 Xijia Wei. Released under the MIT License.',
-      links: ['GitHub', 'Releases', 'Issues']
+      columns: [
+        {
+          title: 'Product',
+          links: [
+            { label: 'Features', href: '#features' },
+            { label: 'How it Works', href: '#howitworks' },
+            { label: 'GitHub', href: 'https://github.com/weixijia/ViTPoseStudio' },
+            { label: 'Releases', href: 'https://github.com/weixijia/ViTPoseStudio/releases' }
+          ]
+        },
+        {
+          title: 'Company',
+          links: [
+            { label: 'Contact (Xijia Wei)', href: 'mailto:xijia.wei.21@ucl.ac.uk' },
+            { label: 'Vomee Platform', href: 'https://doi.org/10.1145/3737904.3768536' }
+          ]
+        },
+        {
+          title: 'Resources',
+          links: [
+            { label: 'Paper Citation', href: '#citation' },
+            { label: 'Issues', href: 'https://github.com/weixijia/ViTPoseStudio/issues' }
+          ]
+        }
+      ]
     }
   },
   cn: {
@@ -140,22 +156,38 @@ const translations = {
         }
       ]
     },
-    contributors: {
-      title1: '核心团队',
-      title2: '贡献者',
-      subtitle: 'VP Mirror 由伦敦大学学院 (UCL) 的研究人员开发和维护。',
-      members: [
-        { name: '魏熙佳', email: 'xijia.wei.21@ucl.ac.uk' },
-        { name: '刘一夫', email: 'yifu.liu.22@ucl.ac.uk' }
-      ]
-    },
     citation: {
       title1: '学术引用',
       subtitle: 'VP Mirror 衍生自我们的多模态数据采集平台 Vomee。如果您在研究中使用了本工具，欢迎引用我们的论文：',
     },
     footer: {
+      brandDesc: '基于 Vomee 打造的轻量级版本，提供流畅的 RGB 视觉动作捕捉体验。',
       copyright: '© 2026 Xijia Wei. 基于 MIT 协议开源。',
-      links: ['GitHub', '发布版本', '问题反馈']
+      columns: [
+        {
+          title: '产品',
+          links: [
+            { label: '功能特点', href: '#features' },
+            { label: '工作原理', href: '#howitworks' },
+            { label: 'GitHub', href: 'https://github.com/weixijia/ViTPoseStudio' },
+            { label: '发布版本', href: 'https://github.com/weixijia/ViTPoseStudio/releases' }
+          ]
+        },
+        {
+          title: '公司团队',
+          links: [
+            { label: '联系方式 (魏熙佳)', href: 'mailto:xijia.wei.21@ucl.ac.uk' },
+            { label: 'Vomee 平台', href: 'https://doi.org/10.1145/3737904.3768536' }
+          ]
+        },
+        {
+          title: '开发资源',
+          links: [
+            { label: '论文引用', href: '#citation' },
+            { label: '问题反馈', href: 'https://github.com/weixijia/ViTPoseStudio/issues' }
+          ]
+        }
+      ]
     }
   }
 }
