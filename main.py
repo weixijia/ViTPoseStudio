@@ -127,6 +127,9 @@ class VPMirrorApp(QMainWindow):
         # Start camera thread
         self.camera_thread = CameraThread(self, self.cap)
         self.camera_thread.change_pixmap_signal.connect(self.update_image)
+        # MacOS QThread defaults to tiny stack (512KB) which causes OpenBLAS to crash. 
+        # Set to 16MB to allow PyTorch/Numpy heavy inference.
+        self.camera_thread.setStackSize(16 * 1024 * 1024) 
         self.camera_thread.start()
 
         # Update recording UI timer
