@@ -13,7 +13,7 @@
 
 <br/>
 
-**VP Mirror** is a distilled, lightweight version of our comprehensive multimodal data collection platform, [**Vomee**](https://doi.org/10.1145/3737904.3768536). While Vomee handles complex multimodal sensing (Video, Audio, mmWave, and Skeleton Data), **VP Mirror** is specifically designed to focus on **RGB-based visual motion capture**. It extracts the foundational capabilities of the ViTPose engine and pairs them with a beautiful graphical user interface built with `customtkinter`, providing seamless, out-of-the-box human pose estimation and synchronization functions for your daily research or creative needs.
+**VP Mirror** is a distilled, lightweight version of our comprehensive multimodal data collection platform, [**Vomee**](https://doi.org/10.1145/3737904.3768536). While Vomee handles complex multimodal sensing (Video, Audio, mmWave, and Skeleton Data), **VP Mirror** is specifically designed to focus on **RGB-based visual motion capture**. It extracts the foundational capabilities of the ViTPose engine and pairs them with a beautiful graphical user interface built with `PySide6` (Qt for Python), providing seamless, out-of-the-box human pose estimation and synchronization functions for your daily research or creative needs.
 
 ---
 

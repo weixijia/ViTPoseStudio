@@ -81,16 +81,10 @@ const translations = {
           ]
         },
         {
-          title: 'Company',
-          links: [
-            { label: 'Contact (Xijia Wei)', href: 'mailto:xijia.wei.21@ucl.ac.uk' },
-            { label: 'Vomee Platform', href: 'https://doi.org/10.1145/3737904.3768536' }
-          ]
-        },
-        {
           title: 'Resources',
           links: [
             { label: 'Paper Citation', href: '#citation' },
+            { label: 'Contact (Xijia Wei)', href: 'mailto:xijia.wei.21@ucl.ac.uk' },
             { label: 'Issues', href: 'https://github.com/weixijia/ViTPoseStudio/issues' }
           ]
         }
@@ -174,16 +168,10 @@ const translations = {
           ]
         },
         {
-          title: '公司团队',
-          links: [
-            { label: '联系方式 (魏熙佳)', href: 'mailto:xijia.wei.21@ucl.ac.uk' },
-            { label: 'Vomee 平台', href: 'https://doi.org/10.1145/3737904.3768536' }
-          ]
-        },
-        {
           title: '开发资源',
           links: [
             { label: '论文引用', href: '#citation' },
+            { label: '联系方式 (魏熙佳)', href: 'mailto:xijia.wei.21@ucl.ac.uk' },
             { label: '问题反馈', href: 'https://github.com/weixijia/ViTPoseStudio/issues' }
           ]
         }
