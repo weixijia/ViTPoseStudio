@@ -1,11 +1,17 @@
-2026-05-23 13:56:20,640 - MainThread - DEBUG - matplotlib data path: /Users/weixijia/anaconda3/envs/pose/lib/python3.9/site-packages/matplotlib/mpl-data
-2026-05-23 13:56:20,642 - MainThread - DEBUG - CONFIGDIR=/Users/weixijia/.matplotlib
-2026-05-23 13:56:20,642 - MainThread - DEBUG - interactive is False
-2026-05-23 13:56:20,642 - MainThread - DEBUG - platform is darwin
-2026-05-23 13:56:20,685 - MainThread - DEBUG - CACHEDIR=/Users/weixijia/.matplotlib
-2026-05-23 13:56:20,686 - MainThread - DEBUG - Using fontManager instance from /Users/weixijia/.matplotlib/fontlist-v330.json
-2026-05-23 13:56:21,902 - MainThread - INFO - VPMirrorApp initializing UI and setting up threads...
-2026-05-23 13:56:21,944 - Thread-1 - INFO - Requested model change to size: s
-2026-05-23 13:56:21,954 - Thread-1 - INFO - Instantiating VitInference with device=mps, dataset=wholebody
-2026-05-23 13:56:22,113 - Thread-1 - INFO - VitInference model instantiated successfully
-2026-05-23 13:56:23,461 - Dummy-2 - INFO - CameraThread started
+2026-05-23 13:57:43,168 - MainThread - DEBUG - matplotlib data path: /Users/weixijia/anaconda3/envs/pose/lib/python3.9/site-packages/matplotlib/mpl-data
+2026-05-23 13:57:43,170 - MainThread - DEBUG - CONFIGDIR=/Users/weixijia/.matplotlib
+2026-05-23 13:57:43,170 - MainThread - DEBUG - interactive is False
+2026-05-23 13:57:43,170 - MainThread - DEBUG - platform is darwin
+2026-05-23 13:57:43,216 - MainThread - DEBUG - CACHEDIR=/Users/weixijia/.matplotlib
+2026-05-23 13:57:43,217 - MainThread - DEBUG - Using fontManager instance from /Users/weixijia/.matplotlib/fontlist-v330.json
+2026-05-23 13:57:44,824 - MainThread - INFO - VPMirrorApp initializing UI and setting up threads...
+2026-05-23 13:57:44,866 - Thread-1 - INFO - Requested model change to size: s
+2026-05-23 13:57:44,877 - Thread-1 - INFO - Instantiating VitInference with device=mps, dataset=wholebody
+2026-05-23 13:57:45,053 - Thread-1 - INFO - VitInference model instantiated successfully
+2026-05-23 13:57:46,348 - Dummy-2 - INFO - CameraThread started
+2026-05-23 13:58:17,353 - Thread-5 - INFO - Requested model change to size: h
+2026-05-23 13:58:17,353 - Thread-5 - INFO - Instantiating VitInference with device=mps, dataset=wholebody
+2026-05-23 13:58:21,625 - Thread-5 - INFO - VitInference model instantiated successfully
+2026-05-23 13:58:49,425 - MainThread - INFO - Starting FFmpeg with cmd: ffmpeg -y -f rawvideo -vcodec rawvideo -s 1920x1080 -pix_fmt bgr24 -r 30 -i - -f avfoundation -i :0 -c:a aac -shortest -c:v libx264 -preset ultrafast output/recording_1779541129.mp4
+2026-05-23 13:59:30,167 - MainThread - INFO - Stopping recording process.
+2026-05-23 13:59:34,267 - Thread-7 - INFO - FFmpeg loop finished, wrote 1218 frames.

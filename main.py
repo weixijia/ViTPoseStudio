@@ -11,9 +11,9 @@ import shutil
 import urllib.request
 import logging
 
-# Setup debug mode logging active by default
+# Setup debug mode logging (Default to WARNING)
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.WARNING,
     format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("vp_mirror_debug.log", mode='w', encoding='utf-8'),
@@ -23,7 +23,7 @@ logging.basicConfig(
 
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QHBoxLayout, QLabel, QPushButton, QComboBox, 
-                               QFrame, QSizePolicy)
+                               QFrame, QSizePolicy, QCheckBox)
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer
 from PySide6.QtGui import QImage, QPixmap, QFont, QColor
 
@@ -105,6 +105,7 @@ class CameraThread(QThread):
 
 class VPMirrorApp(QMainWindow):
     model_status_signal = Signal(str, str)
+    ffmpeg_finished_signal = Signal()
 
     def __init__(self):
         super().__init__()
@@ -112,6 +113,7 @@ class VPMirrorApp(QMainWindow):
         self.setMinimumSize(1100, 700)
         
         self.model_status_signal.connect(self._update_model_status)
+        self.ffmpeg_finished_signal.connect(self._on_ffmpeg_finished)
         
         # Application state
         self.lock = threading.Lock()
@@ -225,6 +227,12 @@ class VPMirrorApp(QMainWindow):
         
         sidebar_layout.addWidget(status_card)
         
+        # Subtle Debug Toggle
+        self.debug_checkbox = QCheckBox("Enable Debug Log")
+        self.debug_checkbox.setObjectName("debug_checkbox")
+        self.debug_checkbox.stateChanged.connect(self.toggle_debug_mode)
+        sidebar_layout.addWidget(self.debug_checkbox, alignment=Qt.AlignCenter)
+        
         # Main Display Area
         self.main_area = QFrame()
         self.main_area.setObjectName("main_area")
@@ -315,6 +323,14 @@ class VPMirrorApp(QMainWindow):
                 font-size: 13px;
                 margin-top: 4px;
             }
+            #debug_checkbox {
+                color: #d2d2d7;
+                font-size: 11px;
+            }
+            #debug_checkbox::indicator {
+                width: 12px;
+                height: 12px;
+            }
             #main_area {
                 background-color: #f5f5f7;
             }
@@ -349,6 +365,14 @@ class VPMirrorApp(QMainWindow):
             self.rec_info_label.setText(f"Time: {mins:02d}:{secs:02d}\nFrames: {rec_frames}")
         else:
             self.rec_info_label.setText("")
+
+    def toggle_debug_mode(self, state):
+        if state == 2: # Qt.Checked is int 2
+            logging.getLogger().setLevel(logging.DEBUG)
+            logging.info("Debug mode activated via UI")
+        else:
+            logging.info("Debug mode deactivated via UI")
+            logging.getLogger().setLevel(logging.WARNING)
 
     def change_model(self, choice):
         size = choice.split(" ")[0] # gets 's', 'b', 'l', 'h'
@@ -477,10 +501,14 @@ class VPMirrorApp(QMainWindow):
         except Exception as e:
             logging.error(f"Error closing FFmpeg: {e}")
         finally:
-            self.rec_status_label.setText("Video Saved Successfully!")
-            self.rec_status_label.setStyleSheet("color: #059669;")
-            QTimer.singleShot(3000, lambda: self.rec_status_label.setText("Not Recording"))
-            QTimer.singleShot(3000, lambda: self.rec_status_label.setStyleSheet("color: #86868b;"))
+            self.ffmpeg_finished_signal.emit()
+
+    @Slot()
+    def _on_ffmpeg_finished(self):
+        self.rec_status_label.setText("Video Saved Successfully!")
+        self.rec_status_label.setStyleSheet("color: #059669;")
+        QTimer.singleShot(3000, lambda: self.rec_status_label.setText("Not Recording"))
+        QTimer.singleShot(3000, lambda: self.rec_status_label.setStyleSheet("color: #86868b;"))
 
     def toggle_recording(self):
         with self.lock:
