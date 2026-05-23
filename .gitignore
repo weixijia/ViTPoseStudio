@@ -2,7 +2,7 @@
 
 # Model weights
 models/*.pth
-models/*.pt
+*.pt
 
 # Output data
 output/
