@@ -9,7 +9,6 @@ import csv
 import platform
 import shutil
 import urllib.request
-import torch
 
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QHBoxLayout, QLabel, QPushButton, QComboBox, 
@@ -21,7 +20,7 @@ from PySide6.QtGui import QImage, QPixmap, QFont, QColor
 from vp_mirror_engine import VitInference
 
 class CameraThread(QThread):
-    change_pixmap_signal = Signal(np.ndarray, float)
+    change_pixmap_signal = Signal(QImage, float)
     
     def __init__(self, app_instance, cap):
         super().__init__()
@@ -79,8 +78,13 @@ class CameraThread(QThread):
                         row = [self.app.record_frame_count, f"{elapsed_rec:.3f}", p_id] + kp.flatten().tolist()
                         self.app.csv_writer.writerow(row)
                     self.app.record_frame_count += 1
-                    
-            self.change_pixmap_signal.emit(output_rgb, fps)
+            
+            # Convert to QImage and copy to prevent memory corruption across threads
+            h, w, ch = output_rgb.shape
+            bytes_per_line = ch * w
+            q_img = QImage(output_rgb.data, w, h, bytes_per_line, QImage.Format_RGB888).copy()
+            
+            self.change_pixmap_signal.emit(q_img, fps)
 
     def stop(self):
         self.running = False
@@ -302,26 +306,15 @@ class VPMirrorApp(QMainWindow):
             }
         """)
 
-    @Slot(np.ndarray, float)
-    def update_image(self, cv_img, fps):
-        h, w, ch = cv_img.shape
-        bytes_per_line = ch * w
-        
+    @Slot(QImage, float)
+    def update_image(self, q_img, fps):
         # Scale image to fit container while maintaining aspect ratio
         container_w = self.video_container.width()
         container_h = self.video_container.height()
         
         if container_w > 10 and container_h > 10:
-            scale = min(container_w / w, container_h / h)
-            new_w = int(w * scale)
-            new_h = int(h * scale)
-            
-            if new_w > 0 and new_h > 0:
-                cv_img_resized = cv2.resize(cv_img, (new_w, new_h))
-                bytes_per_line_resized = ch * new_w
-                convert_to_Qt_format = QImage(cv_img_resized.data, new_w, new_h, bytes_per_line_resized, QImage.Format_RGB888)
-                p = convert_to_Qt_format.copy() # Safe copy
-                self.video_label.setPixmap(QPixmap.fromImage(p))
+            scaled_q_img = q_img.scaled(container_w, container_h, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.video_label.setPixmap(QPixmap.fromImage(scaled_q_img))
                 
         if self.model is not None:
             self.status_label.setText(f"Running | FPS: {fps:.1f}")
@@ -351,6 +344,7 @@ class VPMirrorApp(QMainWindow):
         self.status_label.setStyleSheet(f"color: {color}; font-weight: 600;")
 
     def _load_specific_model(self, size="s"):
+        import torch
         # Temporarily disable inference during swap
         with self.lock:
             old_model = self.model
