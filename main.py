@@ -92,6 +92,7 @@ class CameraThread(QThread):
                     self.app.record_frame_count += 1
             
             # Convert to QImage and copy to prevent memory corruption across threads
+            output_rgb = np.ascontiguousarray(output_rgb)
             h, w, ch = output_rgb.shape
             bytes_per_line = ch * w
             q_img = QImage(output_rgb.data, w, h, bytes_per_line, QImage.Format_RGB888).copy()
