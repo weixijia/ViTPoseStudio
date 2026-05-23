@@ -42,8 +42,10 @@ class YOLOPoseWrapper:
         self._last_results = None
 
     def inference(self, img_rgb):
+        # Ultralytics expects BGR numpy arrays. We receive RGB from CameraThread.
+        img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
         # Run inference with tracking to maintain person IDs
-        results = self.model.track(img_rgb, persist=True, verbose=False, device=self.model.device)
+        results = self.model.track(img_bgr, persist=True, verbose=False, device=self.model.device)
         self._last_results = results[0]
         
         keypoints_dict = {}
