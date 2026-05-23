@@ -8,6 +8,7 @@ models/*.pt
 output/
 *.mp4
 *.csv
+*.log
 
 # Python
 __pycache__/
