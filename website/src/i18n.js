@@ -64,8 +64,9 @@ const translations = {
       ]
     },
     citation: {
-      title1: 'Academic Reference',
-      subtitle: 'VP Mirror is derived from our multimodal data collection platform, Vomee. If you use our tool in your research, please consider citing our paper:',
+      title1: 'Academic References',
+      subtitleVomee: 'VP Mirror is derived from our multimodal data collection platform, Vomee. If you use our tool in your research, please consider citing our paper:',
+      subtitleVitpose: 'Our core skeleton extraction engine is built upon the incredible ViTPose foundation model. Please also acknowledge their pioneering work:',
     },
     footer: {
       brandDesc: 'A lightweight version of Vomee. Providing seamless RGB-based visual motion capture.',
@@ -152,7 +153,8 @@ const translations = {
     },
     citation: {
       title1: '学术引用',
-      subtitle: 'VP Mirror 衍生自我们的多模态数据采集平台 Vomee。如果您在研究中使用了本工具，欢迎引用我们的论文：',
+      subtitleVomee: 'VP Mirror 衍生自我们的多模态数据采集平台 Vomee。如果您在研究中使用了本工具，欢迎引用我们的论文：',
+      subtitleVitpose: '本项目的核心骨骼特征提取基于优秀的 ViTPose 基础模型。也请在研究中致谢他们的开创性工作：',
     },
     footer: {
       brandDesc: '基于 Vomee 打造的轻量级版本，提供流畅的 RGB 视觉动作捕捉体验。',

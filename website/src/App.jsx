@@ -169,10 +169,15 @@ function Citation() {
   return (
     <section id="citation" className="section-padding" ref={ref}>
       <div className="container">
-        <div className={`citation-box ${visible ? 'fade-up' : 'pre-fade'}`}>
-          <h2>{t.citation.title1}</h2>
-          <p>{t.citation.subtitle}</p>
-          <div className="bibtex-code">
+        <div className={`citation-box ${visible ? 'fade-up' : 'pre-fade'}`} style={{ textAlign: 'left' }}>
+          <h2 style={{ marginBottom: '40px', fontSize: '28px', textAlign: 'center' }}>{t.citation.title1}</h2>
+          
+          <div style={{ marginBottom: '40px' }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
+              {t.citation.subtitleVomee}
+            </p>
+            <div className="bibtex-code">
+              <code>
 {`@inproceedings{10.1145/3737904.3768536,
   author = {Wei, Xijia and Fang, Yuan and Chetty, Kevin and Cho, Youngjun and Bianchi-Berthouze, Nadia},
   title = {Vomee: A Multimodal Sensing Platform for Video, Audio, mmWave and Skeleton Data Capturing},
@@ -183,9 +188,34 @@ function Citation() {
   url = {https://doi.org/10.1145/3737904.3768536},
   doi = {10.1145/3737904.3768536},
   booktitle = {Proceedings of the 2025 ACM Workshop on Access Networks with Artificial Intelligence},
-  pages = {36--40}
+  pages = {36--40},
+  numpages = {5},
+  keywords = {mmWave Sensing, Human Activity Recognition, Multimodal Motion Capture},
+  series = {MobiCom '25}
 }`}
+              </code>
+            </div>
           </div>
+
+          <div>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
+              {t.citation.subtitleVitpose} <a href="https://github.com/ViTAE-Transformer/ViTPose" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>ViTAE-Transformer/ViTPose</a>
+            </p>
+            <div className="bibtex-code">
+              <code>
+{`@article{xu2023ViTPose++,
+  title={ViTPose++: Vision Transformer Foundation Model for Generic Body Pose Estimation},
+  author={Xu, Yufei and Zhang, Jing and Zhang, Qiming and Tao, Dacheng},
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  year={2024},
+  volume={46},
+  pages={1212-1230},
+  doi={10.1109/TPAMI.2023.3330016}
+}`}
+              </code>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
