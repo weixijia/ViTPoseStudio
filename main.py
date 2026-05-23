@@ -202,16 +202,16 @@ class VPMirrorApp(QMainWindow):
     def _setup_styles(self):
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #0d0d12;
+                background-color: #f6f8fa;
             }
             #sidebar {
-                background-color: #12121a;
-                border-right: 1px solid #1f1f2e;
+                background-color: #ffffff;
+                border-right: 1px solid #d0d7de;
             }
             #logo {
                 font-size: 26px;
                 font-weight: 800;
-                color: #ffffff;
+                color: #24292f;
                 letter-spacing: -0.5px;
             }
             #record_btn {
@@ -227,31 +227,31 @@ class VPMirrorApp(QMainWindow):
                 background-color: #3fb950;
             }
             #record_btn[recording="true"] {
-                background-color: #da3633;
+                background-color: #cf222e;
             }
             #record_btn[recording="true"]:hover {
-                background-color: #f85149;
+                background-color: #a40e26;
             }
             #status_muted {
-                color: #8b949e;
+                color: #57606a;
                 font-size: 13px;
                 font-weight: 500;
             }
             #info_label {
-                color: #c9d1d9;
+                color: #24292f;
                 font-size: 13px;
             }
             #section_title {
-                color: #8b949e;
+                color: #57606a;
                 font-size: 12px;
                 font-weight: 600;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
             }
             QComboBox {
-                background-color: #21262d;
-                color: #c9d1d9;
-                border: 1px solid #30363d;
+                background-color: #f6f8fa;
+                color: #24292f;
+                border: 1px solid #d0d7de;
                 border-radius: 6px;
                 padding: 8px 12px;
                 font-size: 14px;
@@ -260,16 +260,16 @@ class VPMirrorApp(QMainWindow):
                 border: none;
             }
             #system_status {
-                color: #8b949e;
+                color: #57606a;
                 font-size: 13px;
             }
             #main_area {
-                background-color: #0d0d12;
+                background-color: #f6f8fa;
             }
             #video_container {
                 background-color: #000000;
                 border-radius: 12px;
-                border: 1px solid #1f1f2e;
+                border: 1px solid #d0d7de;
             }
         """)
 
@@ -296,7 +296,7 @@ class VPMirrorApp(QMainWindow):
                 
         if self.model is not None:
             self.status_label.setText(f"Running | FPS: {fps:.1f}")
-            self.status_label.setStyleSheet("color: #ffffff;")
+            self.status_label.setStyleSheet("color: #24292f;")
 
     def _update_rec_ui(self):
         with self.lock:
@@ -313,7 +313,7 @@ class VPMirrorApp(QMainWindow):
     def change_model(self, choice):
         size = choice.split(" ")[0] # gets 's', 'b', 'l', 'h'
         self.status_label.setText(f"Loading {size.upper()} Model...\nPlease wait.")
-        self.status_label.setStyleSheet("color: #d29922; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #9a6700; font-weight: bold;")
         threading.Thread(target=self._load_specific_model, args=(size,), daemon=True).start()
 
     def _load_specific_model(self, size="s"):
@@ -422,9 +422,9 @@ class VPMirrorApp(QMainWindow):
             print(f"Error closing FFmpeg: {e}")
         finally:
             self.rec_status_label.setText("Video Saved Successfully!")
-            self.rec_status_label.setStyleSheet("color: #3fb950;")
+            self.rec_status_label.setStyleSheet("color: #1a7f37;")
             QTimer.singleShot(3000, lambda: self.rec_status_label.setText("Not Recording"))
-            QTimer.singleShot(3000, lambda: self.rec_status_label.setStyleSheet("color: #8b949e;"))
+            QTimer.singleShot(3000, lambda: self.rec_status_label.setStyleSheet("color: #57606a;"))
 
     def toggle_recording(self):
         with self.lock:
@@ -504,7 +504,7 @@ class VPMirrorApp(QMainWindow):
                     self.record_btn.style().polish(self.record_btn)
                     
                     self.rec_status_label.setText("Recording...")
-                    self.rec_status_label.setStyleSheet("color: #f85149;")
+                    self.rec_status_label.setStyleSheet("color: #cf222e;")
             else:
                 self.is_recording = False
                 
@@ -519,7 +519,7 @@ class VPMirrorApp(QMainWindow):
                 self.record_btn.style().polish(self.record_btn)
                 
                 self.rec_status_label.setText("Saving Video...")
-                self.rec_status_label.setStyleSheet("color: #d29922;")
+                self.rec_status_label.setStyleSheet("color: #9a6700;")
                 self.rec_info_label.setText("")
 
     def closeEvent(self, event):
