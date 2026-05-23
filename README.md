@@ -21,7 +21,7 @@
 
 - 🖥️ **Modern Cross-Platform UI**: A sleek, fully-responsive macOS-style light mode interface with a card-based side control panel and live camera preview. Works seamlessly on **Windows, macOS, and Linux**.
 - 🧍 **Wholebody Detection**: Automatically detects full facial mesh, detailed finger joints, and full body skeletons using the state-of-the-art `vitpose-s-wholebody` model. *(Auto-downloads on first launch!)*
-- ⚡ **Real-Time Inference Pipeline**: Powered by **YOLOv8** for rapid human bounding box detection, **SORT** for multi-person temporal tracking, and **ViTPose** for precise 2D keypoint extraction.
+- ⚡ **Real-Time Inference Pipeline**: Powered by **YOLOv8 & YOLO26** for rapid human bounding box detection and extreme high-FPS tracking, alongside **SORT** and **ViTPose** for precise 2D keypoint extraction.
 - 🎬 **Synchronized AV Recording Engine**: Uses a robust FFmpeg integration to perfectly synchronize live audio (from your system's microphone) with the skeleton-overlaid video. Handles hardware frame-rate jitter effortlessly by zero-padding to a strict 30 FPS.
 - 📊 **CSV Data Collection**: Every time you hit record, a synchronized `.csv` dataset is generated containing frame-by-frame data for all tracking keypoints, perfectly matched to the `.mp4` video timeline.
 
@@ -98,6 +98,20 @@ If you encounter crashes (like macOS `SIGBUS` errors) or unexpected behavior, VP
   numpages = {5},
   keywords = {mmWave Sensing, Human Activity Recognition, Multimodal Motion Capture},
   series = {MobiCom '25}
+}
+```
+
+VP Mirror also integrates **Ultralytics YOLO26** for high-performance end-to-end tracking. Please also consider citing their work if you utilize the YOLO engine:
+
+```bibtex
+@software{yolo26_ultralytics,
+  author = {Glenn Jocher and Jing Qiu},
+  title = {Ultralytics YOLO26},
+  version = {26.0.0},
+  year = {2026},
+  url = {https://github.com/ultralytics/ultralytics},
+  orcid = {0000-0001-5950-6979, 0000-0003-3783-7069},
+  license = {AGPL-3.0}
 }
 ```
 

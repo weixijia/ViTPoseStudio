@@ -197,7 +197,7 @@ function Citation() {
             </div>
           </div>
 
-          <div>
+            <div>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
               {t.citation.subtitleVitpose} <a href="https://github.com/ViTAE-Transformer/ViTPose" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>ViTAE-Transformer/ViTPose</a>
             </p>
@@ -211,6 +211,25 @@ function Citation() {
   volume={46},
   pages={1212-1230},
   doi={10.1109/TPAMI.2023.3330016}
+}`}
+              </code>
+            </div>
+          </div>
+
+          <div>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', marginTop: '40px' }}>
+              {t.citation.subtitleYolo} <a href="https://github.com/ultralytics/ultralytics" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Ultralytics/YOLO26</a>
+            </p>
+            <div className="bibtex-code">
+              <code>
+{`@software{yolo26_ultralytics,
+  author = {Glenn Jocher and Jing Qiu},
+  title = {Ultralytics YOLO26},
+  version = {26.0.0},
+  year = {2026},
+  url = {https://github.com/ultralytics/ultralytics},
+  orcid = {0000-0001-5950-6979, 0000-0003-3783-7069},
+  license = {AGPL-3.0}
 }`}
               </code>
             </div>
