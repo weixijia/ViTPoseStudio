@@ -9,6 +9,17 @@ import csv
 import platform
 import shutil
 import urllib.request
+import logging
+
+# Setup debug mode logging active by default
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("vp_mirror_debug.log", mode='w', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QHBoxLayout, QLabel, QPushButton, QComboBox, 
@@ -29,6 +40,7 @@ class CameraThread(QThread):
         self.running = True
 
     def run(self):
+        logging.info("CameraThread started")
         while self.running:
             ret, frame = self.cap.read()
             if not ret:
@@ -56,7 +68,7 @@ class CameraThread(QThread):
                         skeleton_thickness=2
                     )
                 except Exception as e:
-                    print(f"Inference error: {e}")
+                    logging.error(f"Inference error: {e}")
                     keypoints_dict = {}
                     output_rgb = frame_rgb
             else:
@@ -114,6 +126,8 @@ class VPMirrorApp(QMainWindow):
         self.csv_writer = None
         self.record_start_time = 0
         self.record_frame_count = 0
+        
+        logging.info("VPMirrorApp initializing UI and setting up threads...")
         
         self._setup_ui()
         self._setup_styles()
@@ -348,6 +362,7 @@ class VPMirrorApp(QMainWindow):
 
     def _load_specific_model(self, size="s"):
         import torch
+        logging.info(f"Requested model change to size: {size}")
         # Temporarily disable inference during swap
         with self.lock:
             old_model = self.model
@@ -368,17 +383,20 @@ class VPMirrorApp(QMainWindow):
         if size == 's' and not os.path.exists(model_path) and os.path.exists(old_model_path):
             try:
                 shutil.move(old_model_path, model_path)
+                logging.info(f"Moved old model from {old_model_path} to {model_path}")
             except Exception as e:
-                print(f"Could not move old model: {e}")
+                logging.warning(f"Could not move old model: {e}")
                 
         dataset = 'wholebody'
         if not os.path.exists(model_path):
             self.status_label.setText(f"Downloading {size.upper()} model...\n(Can take minutes)")
+            logging.info(f"Downloading model {model_filename} from HuggingFace...")
             try:
                 url = f"https://huggingface.co/JunkyByte/easy_ViTPose/resolve/main/torch/wholebody/{model_filename}"
                 urllib.request.urlretrieve(url, model_path)
+                logging.info("Model download complete.")
             except Exception as e:
-                print(f"Failed to download model: {e}")
+                logging.error(f"Failed to download model: {e}")
                 model_path = os.path.join(models_dir, 'vitpose-s-coco.pth')
                 dataset = 'coco'
                 size = 's'
@@ -400,6 +418,7 @@ class VPMirrorApp(QMainWindow):
             device = 'mps'
             
         try:
+            logging.info(f"Instantiating VitInference with device={device}, dataset={dataset}")
             new_model = VitInference(
                 model_path,
                 yolo_path,
@@ -412,9 +431,10 @@ class VPMirrorApp(QMainWindow):
             )
             with self.lock:
                 self.model = new_model
+            logging.info("VitInference model instantiated successfully")
             self.model_status_signal.emit(f"Model Ready ({size.upper()} - {device})", "#059669")
         except Exception as e:
-            print(f"Model init error: {e}")
+            logging.error(f"Model init error: {e}", exc_info=True)
             self.model_status_signal.emit(f"Error: {e}", "#e30000")
 
     def _ffmpeg_writer_loop(self, proc):
@@ -440,7 +460,7 @@ class VPMirrorApp(QMainWindow):
                                 proc.stdin.write(frame_bytes)
                             frames_written += 1
                     except Exception as e:
-                        print(f"FFmpeg write error: {e}")
+                        logging.error(f"FFmpeg write error: {e}")
                         break
             time.sleep(0.01)
             
@@ -448,11 +468,13 @@ class VPMirrorApp(QMainWindow):
             if proc.stdin:
                 proc.stdin.close()
             proc.wait(timeout=5)
+            logging.info(f"FFmpeg loop finished, wrote {frames_written} frames.")
         except subprocess.TimeoutExpired:
+            logging.warning("FFmpeg timeout expired, terminating.")
             proc.terminate()
             proc.wait()
         except Exception as e:
-            print(f"Error closing FFmpeg: {e}")
+            logging.error(f"Error closing FFmpeg: {e}")
         finally:
             self.rec_status_label.setText("Video Saved Successfully!")
             self.rec_status_label.setStyleSheet("color: #059669;")
@@ -511,6 +533,7 @@ class VPMirrorApp(QMainWindow):
                         filename
                     ])
                     
+                    logging.info(f"Starting FFmpeg with cmd: {' '.join(cmd)}")
                     self.ffmpeg_proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
                     
                     self.csv_file = open(csv_filename, 'w', newline='')
@@ -539,6 +562,7 @@ class VPMirrorApp(QMainWindow):
                     self.rec_status_label.setText("Recording...")
                     self.rec_status_label.setStyleSheet("color: #e30000;")
             else:
+                logging.info("Stopping recording process.")
                 self.is_recording = False
                 
                 if self.csv_file is not None:
