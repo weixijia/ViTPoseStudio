@@ -30,6 +30,47 @@ from PySide6.QtGui import QImage, QPixmap, QFont, QColor
 # vp_mirror_engine is bundled locally in the standalone repository
 from vp_mirror_engine import VitInference
 
+class YOLOPoseWrapper:
+    def __init__(self, size="n", device="cpu"):
+        from ultralytics import YOLO
+        # We use yolov8 pose models internally
+        model_name = f"yolov8{size}-pose.pt"
+        logging.info(f"YOLOPoseWrapper loading {model_name} on device {device}")
+        self.model = YOLO(model_name)
+        self.model.to(device)
+        self.dataset = 'coco' # YOLO pose defaults to 17 keypoints
+        self._last_results = None
+
+    def inference(self, img_rgb):
+        # Run inference with tracking to maintain person IDs
+        results = self.model.track(img_rgb, persist=True, verbose=False, device=self.model.device)
+        self._last_results = results[0]
+        
+        keypoints_dict = {}
+        if self._last_results.boxes and self._last_results.boxes.id is not None:
+            # boxes.id is a tensor of tracking IDs
+            ids = self._last_results.boxes.id.int().cpu().tolist()
+            if self._last_results.keypoints and self._last_results.keypoints.data is not None:
+                # keypoints.data is shape (num_persons, 17, 3) where [x, y, conf]
+                kpts_data = self._last_results.keypoints.data.cpu().numpy()
+                
+                for person_id, kpts in zip(ids, kpts_data):
+                    keypoints_dict[person_id] = kpts
+        return keypoints_dict
+
+    def draw(self, show_yolo=False, confidence_threshold=0.3, skeleton_thickness=2):
+        if self._last_results is None:
+            return np.zeros((480, 640, 3), dtype=np.uint8)
+        # ultralytics plot returns BGR image, we need RGB
+        plotted_bgr = self._last_results.plot(
+            boxes=show_yolo, 
+            kpt_line=True, 
+            labels=False, 
+            conf=confidence_threshold,
+            line_width=skeleton_thickness
+        )
+        return cv2.cvtColor(plotted_bgr, cv2.COLOR_BGR2RGB)
+
 class CameraThread(QThread):
     change_pixmap_signal = Signal(QImage, float)
     
@@ -136,7 +177,7 @@ class VPMirrorApp(QMainWindow):
         self._setup_styles()
         
         # Setup background tasks
-        self.change_model("s (Small/Fast)")
+        self.change_model("ViTPose - s (Small/Fast)")
         
         # Open camera in main thread for macOS AVFoundation safety
         self.cap = cv2.VideoCapture(0)
@@ -196,7 +237,16 @@ class VPMirrorApp(QMainWindow):
         
         self.model_menu = QComboBox()
         self.model_menu.setCursor(Qt.PointingHandCursor)
-        self.model_menu.addItems(["s (Small/Fast)", "b (Base)", "l (Large)", "h (Huge/Precise)"])
+        self.model_menu.addItems([
+            "ViTPose - s (Small/Fast)", 
+            "ViTPose - b (Base)", 
+            "ViTPose - l (Large)", 
+            "ViTPose - h (Huge/Precise)",
+            "YOLO26 - n (Nano/Fastest)",
+            "YOLO26 - s (Small)",
+            "YOLO26 - m (Medium)",
+            "YOLO26 - l (Large)"
+        ])
         self.model_menu.currentTextChanged.connect(self.change_model)
         settings_layout.addWidget(self.model_menu)
         sidebar_layout.addWidget(settings_card)
@@ -377,19 +427,22 @@ class VPMirrorApp(QMainWindow):
             logging.getLogger().setLevel(logging.WARNING)
 
     def change_model(self, choice):
-        size = choice.split(" ")[0] # gets 's', 'b', 'l', 'h'
-        self.status_label.setText(f"Loading {size.upper()} Model...\nPlease wait.")
+        parts = choice.split("-")
+        model_type = parts[0].strip()
+        size = parts[1].strip().split(" ")[0] # gets 's', 'b', 'l', 'h' or 'n', 's', 'm', 'l'
+        
+        self.status_label.setText(f"Loading {model_type} {size.upper()}...\nPlease wait.")
         self.status_label.setStyleSheet("color: #d97706; font-weight: 600;")
-        threading.Thread(target=self._load_specific_model, args=(size,), daemon=True).start()
+        threading.Thread(target=self._load_specific_model, args=(model_type, size), daemon=True).start()
 
     @Slot(str, str)
     def _update_model_status(self, text, color):
         self.status_label.setText(text)
         self.status_label.setStyleSheet(f"color: {color}; font-weight: 600;")
 
-    def _load_specific_model(self, size="s"):
+    def _load_specific_model(self, model_type="ViTPose", size="s"):
         import torch
-        logging.info(f"Requested model change to size: {size}")
+        logging.info(f"Requested model change to type: {model_type}, size: {size}")
         # Temporarily disable inference during swap
         with self.lock:
             old_model = self.model
@@ -397,7 +450,26 @@ class VPMirrorApp(QMainWindow):
             if old_model is not None:
                 del old_model
                 
-        # Paths
+        device = 'cpu'
+        if torch.cuda.is_available():
+            device = 'cuda'
+        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+            device = 'mps'
+
+        if model_type == "YOLO26":
+            try:
+                logging.info(f"Instantiating YOLO Pose wrapper with device={device}")
+                new_model = YOLOPoseWrapper(size=size, device=device)
+                with self.lock:
+                    self.model = new_model
+                logging.info("YOLO Pose model instantiated successfully")
+                self.model_status_signal.emit(f"Model Ready ({model_type}-{size.upper()} - {device})", "#059669")
+            except Exception as e:
+                logging.error(f"Model init error: {e}", exc_info=True)
+                self.model_status_signal.emit(f"Error: {e}", "#e30000")
+            return
+
+        # Paths for ViTPose
         curr_dir = os.path.dirname(os.path.abspath(__file__))
         models_dir = os.path.join(curr_dir, 'models')
         os.makedirs(models_dir, exist_ok=True)
