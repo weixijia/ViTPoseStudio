@@ -34,7 +34,11 @@ class CameraThread(QThread):
         while self.running:
             ret, frame = cap.read()
             if not ret:
-                break
+                # Camera failed to read. Create a blank frame instead of dying.
+                frame = np.zeros((480, 640, 3), dtype=np.uint8)
+                cv2.putText(frame, "Camera Offline", (200, 240), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+                time.sleep(0.1)
                 
             frame = cv2.flip(frame, 1)
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -86,10 +90,14 @@ class CameraThread(QThread):
         self.wait()
 
 class VPMirrorApp(QMainWindow):
+    model_status_signal = Signal(str, str)
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("VP Mirror")
         self.setMinimumSize(1100, 700)
+        
+        self.model_status_signal.connect(self._update_model_status)
         
         # Application state
         self.lock = threading.Lock()
@@ -337,6 +345,11 @@ class VPMirrorApp(QMainWindow):
         self.status_label.setStyleSheet("color: #d97706; font-weight: 600;")
         threading.Thread(target=self._load_specific_model, args=(size,), daemon=True).start()
 
+    @Slot(str, str)
+    def _update_model_status(self, text, color):
+        self.status_label.setText(text)
+        self.status_label.setStyleSheet(f"color: {color}; font-weight: 600;")
+
     def _load_specific_model(self, size="s"):
         # Temporarily disable inference during swap
         with self.lock:
@@ -402,8 +415,10 @@ class VPMirrorApp(QMainWindow):
             )
             with self.lock:
                 self.model = new_model
+            self.model_status_signal.emit(f"Model Ready ({size.upper()} - {device})", "#059669")
         except Exception as e:
             print(f"Model init error: {e}")
+            self.model_status_signal.emit(f"Error: {e}", "#e30000")
 
     def _ffmpeg_writer_loop(self, proc):
         target_fps = 30.0
