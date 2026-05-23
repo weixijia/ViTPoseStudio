@@ -23,16 +23,15 @@ from vp_mirror_engine import VitInference
 class CameraThread(QThread):
     change_pixmap_signal = Signal(np.ndarray, float)
     
-    def __init__(self, app_instance):
+    def __init__(self, app_instance, cap):
         super().__init__()
         self.app = app_instance
+        self.cap = cap
         self.running = True
 
     def run(self):
-        cap = cv2.VideoCapture(0)
-        
         while self.running:
-            ret, frame = cap.read()
+            ret, frame = self.cap.read()
             if not ret:
                 # Camera failed to read. Create a blank frame instead of dying.
                 frame = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -82,8 +81,6 @@ class CameraThread(QThread):
                     self.app.record_frame_count += 1
                     
             self.change_pixmap_signal.emit(output_rgb, fps)
-            
-        cap.release()
 
     def stop(self):
         self.running = False
@@ -120,8 +117,11 @@ class VPMirrorApp(QMainWindow):
         # Setup background tasks
         self.change_model("s (Small/Fast)")
         
+        # Open camera in main thread for macOS AVFoundation safety
+        self.cap = cv2.VideoCapture(0)
+        
         # Start camera thread
-        self.camera_thread = CameraThread(self)
+        self.camera_thread = CameraThread(self, self.cap)
         self.camera_thread.change_pixmap_signal.connect(self.update_image)
         self.camera_thread.start()
 
@@ -569,13 +569,16 @@ class VPMirrorApp(QMainWindow):
                 self.csv_file.close()
                 
         self.camera_thread.stop()
+        if hasattr(self, 'cap') and self.cap.isOpened():
+            self.cap.release()
+            
         event.accept()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     # Modern font
-    font = QFont("Inter", 10)
+    font = QFont("Helvetica Neue", 10)
     font.setStyleHint(QFont.SansSerif)
     app.setFont(font)
     
