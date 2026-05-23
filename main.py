@@ -132,58 +132,74 @@ class VPMirrorApp(QMainWindow):
         # Sidebar
         self.sidebar = QFrame()
         self.sidebar.setObjectName("sidebar")
-        self.sidebar.setFixedWidth(280)
+        self.sidebar.setFixedWidth(300)
         sidebar_layout = QVBoxLayout(self.sidebar)
-        sidebar_layout.setContentsMargins(30, 40, 30, 40)
-        sidebar_layout.setSpacing(20)
+        sidebar_layout.setContentsMargins(32, 40, 32, 40)
+        sidebar_layout.setSpacing(24)
         
-        # Logo
+        # Header
         self.logo_label = QLabel("VP Mirror")
         self.logo_label.setObjectName("logo")
         sidebar_layout.addWidget(self.logo_label)
         
-        sidebar_layout.addSpacing(20)
-        
-        # Recording Button
+        # Primary Action
         self.record_btn = QPushButton("Start Recording")
         self.record_btn.setObjectName("record_btn")
+        self.record_btn.setCursor(Qt.PointingHandCursor)
         self.record_btn.clicked.connect(self.toggle_recording)
         sidebar_layout.addWidget(self.record_btn)
         
-        # Recording Status
-        self.rec_status_label = QLabel("Not Recording")
-        self.rec_status_label.setObjectName("status_muted")
-        sidebar_layout.addWidget(self.rec_status_label)
+        # Settings Card
+        settings_card = QFrame()
+        settings_card.setObjectName("card_container")
+        settings_layout = QVBoxLayout(settings_card)
+        settings_layout.setContentsMargins(16, 16, 16, 16)
+        settings_layout.setSpacing(12)
         
-        self.rec_info_label = QLabel("")
-        self.rec_info_label.setObjectName("info_label")
-        sidebar_layout.addWidget(self.rec_info_label)
-        
-        sidebar_layout.addSpacing(30)
-        
-        # Model Selection
         self.model_label = QLabel("Model Accuracy")
         self.model_label.setObjectName("section_title")
-        sidebar_layout.addWidget(self.model_label)
+        settings_layout.addWidget(self.model_label)
         
         self.model_menu = QComboBox()
+        self.model_menu.setCursor(Qt.PointingHandCursor)
         self.model_menu.addItems(["s (Small/Fast)", "b (Base)", "l (Large)", "h (Huge/Precise)"])
         self.model_menu.currentTextChanged.connect(self.change_model)
-        sidebar_layout.addWidget(self.model_menu)
+        settings_layout.addWidget(self.model_menu)
+        sidebar_layout.addWidget(settings_card)
         
         sidebar_layout.addStretch()
         
-        # Status / FPS display
+        # Status Card
+        status_card = QFrame()
+        status_card.setObjectName("card_container")
+        status_layout = QVBoxLayout(status_card)
+        status_layout.setContentsMargins(16, 16, 16, 16)
+        status_layout.setSpacing(8)
+        
+        status_title = QLabel("Telemetry")
+        status_title.setObjectName("section_title")
+        status_layout.addWidget(status_title)
+        
+        self.rec_status_label = QLabel("Not Recording")
+        self.rec_status_label.setObjectName("status_muted")
+        status_layout.addWidget(self.rec_status_label)
+        
+        self.rec_info_label = QLabel("")
+        self.rec_info_label.setObjectName("info_label")
+        status_layout.addWidget(self.rec_info_label)
+        
         self.status_label = QLabel("Starting...")
         self.status_label.setObjectName("system_status")
         self.status_label.setWordWrap(True)
-        sidebar_layout.addWidget(self.status_label, alignment=Qt.AlignCenter)
+        status_layout.addWidget(self.status_label)
+        
+        sidebar_layout.addWidget(status_card)
         
         # Main Display Area
         self.main_area = QFrame()
         self.main_area.setObjectName("main_area")
         main_layout_area = QVBoxLayout(self.main_area)
-        main_layout_area.setContentsMargins(30, 30, 30, 30)
+        main_layout_area.setContentsMargins(32, 32, 32, 32)
         
         self.video_container = QFrame()
         self.video_container.setObjectName("video_container")
@@ -202,74 +218,79 @@ class VPMirrorApp(QMainWindow):
     def _setup_styles(self):
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #f6f8fa;
+                background-color: #f5f5f7;
             }
             #sidebar {
                 background-color: #ffffff;
-                border-right: 1px solid #d0d7de;
+                border-right: none;
             }
             #logo {
-                font-size: 26px;
+                font-size: 28px;
                 font-weight: 800;
-                color: #24292f;
-                letter-spacing: -0.5px;
+                color: #1d1d1f;
+                letter-spacing: -0.8px;
             }
             #record_btn {
-                background-color: #2ea043;
+                background-color: #000000;
                 color: white;
-                font-size: 15px;
+                font-size: 14px;
                 font-weight: 600;
-                padding: 12px;
-                border-radius: 8px;
+                padding: 14px;
+                border-radius: 12px;
                 border: none;
             }
             #record_btn:hover {
-                background-color: #3fb950;
+                background-color: #333333;
             }
             #record_btn[recording="true"] {
-                background-color: #cf222e;
+                background-color: #e30000;
             }
             #record_btn[recording="true"]:hover {
-                background-color: #a40e26;
+                background-color: #b30000;
+            }
+            #card_container {
+                background-color: #fbfbfd;
+                border-radius: 14px;
+                border: 1px solid #eaeaec;
+            }
+            #section_title {
+                color: #86868b;
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
             }
             #status_muted {
-                color: #57606a;
+                color: #86868b;
                 font-size: 13px;
                 font-weight: 500;
             }
             #info_label {
-                color: #24292f;
+                color: #1d1d1f;
                 font-size: 13px;
             }
-            #section_title {
-                color: #57606a;
-                font-size: 12px;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
             QComboBox {
-                background-color: #f6f8fa;
-                color: #24292f;
-                border: 1px solid #d0d7de;
-                border-radius: 6px;
-                padding: 8px 12px;
-                font-size: 14px;
+                background-color: #ffffff;
+                color: #1d1d1f;
+                border: 1px solid #d2d2d7;
+                border-radius: 8px;
+                padding: 10px 12px;
+                font-size: 13px;
             }
             QComboBox::drop-down {
                 border: none;
             }
             #system_status {
-                color: #57606a;
+                color: #86868b;
                 font-size: 13px;
+                margin-top: 4px;
             }
             #main_area {
-                background-color: #f6f8fa;
+                background-color: #f5f5f7;
             }
             #video_container {
                 background-color: #000000;
-                border-radius: 12px;
-                border: 1px solid #d0d7de;
+                border-radius: 20px;
             }
         """)
 
@@ -296,7 +317,7 @@ class VPMirrorApp(QMainWindow):
                 
         if self.model is not None:
             self.status_label.setText(f"Running | FPS: {fps:.1f}")
-            self.status_label.setStyleSheet("color: #24292f;")
+            self.status_label.setStyleSheet("color: #1d1d1f; font-weight: 500;")
 
     def _update_rec_ui(self):
         with self.lock:
@@ -313,7 +334,7 @@ class VPMirrorApp(QMainWindow):
     def change_model(self, choice):
         size = choice.split(" ")[0] # gets 's', 'b', 'l', 'h'
         self.status_label.setText(f"Loading {size.upper()} Model...\nPlease wait.")
-        self.status_label.setStyleSheet("color: #9a6700; font-weight: bold;")
+        self.status_label.setStyleSheet("color: #d97706; font-weight: 600;")
         threading.Thread(target=self._load_specific_model, args=(size,), daemon=True).start()
 
     def _load_specific_model(self, size="s"):
@@ -422,9 +443,9 @@ class VPMirrorApp(QMainWindow):
             print(f"Error closing FFmpeg: {e}")
         finally:
             self.rec_status_label.setText("Video Saved Successfully!")
-            self.rec_status_label.setStyleSheet("color: #1a7f37;")
+            self.rec_status_label.setStyleSheet("color: #059669;")
             QTimer.singleShot(3000, lambda: self.rec_status_label.setText("Not Recording"))
-            QTimer.singleShot(3000, lambda: self.rec_status_label.setStyleSheet("color: #57606a;"))
+            QTimer.singleShot(3000, lambda: self.rec_status_label.setStyleSheet("color: #86868b;"))
 
     def toggle_recording(self):
         with self.lock:
@@ -504,7 +525,7 @@ class VPMirrorApp(QMainWindow):
                     self.record_btn.style().polish(self.record_btn)
                     
                     self.rec_status_label.setText("Recording...")
-                    self.rec_status_label.setStyleSheet("color: #cf222e;")
+                    self.rec_status_label.setStyleSheet("color: #e30000;")
             else:
                 self.is_recording = False
                 
@@ -519,7 +540,7 @@ class VPMirrorApp(QMainWindow):
                 self.record_btn.style().polish(self.record_btn)
                 
                 self.rec_status_label.setText("Saving Video...")
-                self.rec_status_label.setStyleSheet("color: #9a6700;")
+                self.rec_status_label.setStyleSheet("color: #d97706;")
                 self.rec_info_label.setText("")
 
     def closeEvent(self, event):
