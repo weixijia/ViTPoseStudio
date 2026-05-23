@@ -172,6 +172,7 @@ class VPMirrorApp(QMainWindow):
         # Header
         self.logo_label = QLabel("VP Mirror")
         self.logo_label.setObjectName("logo")
+        self.logo_label.setAlignment(Qt.AlignLeft)
         sidebar_layout.addWidget(self.logo_label)
         
         # Primary Action
@@ -186,10 +187,11 @@ class VPMirrorApp(QMainWindow):
         settings_card.setObjectName("card_container")
         settings_layout = QVBoxLayout(settings_card)
         settings_layout.setContentsMargins(16, 16, 16, 16)
-        settings_layout.setSpacing(12)
+        settings_layout.setSpacing(8)
         
         self.model_label = QLabel("Model Accuracy")
         self.model_label.setObjectName("section_title")
+        self.model_label.setAlignment(Qt.AlignLeft)
         settings_layout.addWidget(self.model_label)
         
         self.model_menu = QComboBox()
@@ -210,18 +212,22 @@ class VPMirrorApp(QMainWindow):
         
         status_title = QLabel("Telemetry")
         status_title.setObjectName("section_title")
+        status_title.setAlignment(Qt.AlignLeft)
         status_layout.addWidget(status_title)
         
         self.rec_status_label = QLabel("Not Recording")
-        self.rec_status_label.setObjectName("status_muted")
+        self.rec_status_label.setObjectName("status_text")
+        self.rec_status_label.setAlignment(Qt.AlignLeft)
         status_layout.addWidget(self.rec_status_label)
         
         self.rec_info_label = QLabel("")
-        self.rec_info_label.setObjectName("info_label")
+        self.rec_info_label.setObjectName("status_text")
+        self.rec_info_label.setAlignment(Qt.AlignLeft)
         status_layout.addWidget(self.rec_info_label)
         
         self.status_label = QLabel("Starting...")
-        self.status_label.setObjectName("system_status")
+        self.status_label.setObjectName("status_text")
+        self.status_label.setAlignment(Qt.AlignLeft)
         self.status_label.setWordWrap(True)
         status_layout.addWidget(self.status_label)
         
@@ -231,7 +237,7 @@ class VPMirrorApp(QMainWindow):
         self.debug_checkbox = QCheckBox("Enable Debug Log")
         self.debug_checkbox.setObjectName("debug_checkbox")
         self.debug_checkbox.stateChanged.connect(self.toggle_debug_mode)
-        sidebar_layout.addWidget(self.debug_checkbox, alignment=Qt.AlignCenter)
+        sidebar_layout.addWidget(self.debug_checkbox, alignment=Qt.AlignLeft)
         
         # Main Display Area
         self.main_area = QFrame()
@@ -263,19 +269,21 @@ class VPMirrorApp(QMainWindow):
                 border-right: none;
             }
             #logo {
-                font-size: 28px;
-                font-weight: 800;
+                font-size: 24px;
+                font-weight: 700;
                 color: #1d1d1f;
-                letter-spacing: -0.8px;
+                letter-spacing: -0.5px;
+                margin-left: 4px;
             }
             #record_btn {
                 background-color: #000000;
                 color: white;
                 font-size: 14px;
                 font-weight: 600;
-                padding: 14px;
-                border-radius: 12px;
+                padding: 12px;
+                border-radius: 8px;
                 border: none;
+                margin-top: 4px;
             }
             #record_btn:hover {
                 background-color: #333333;
@@ -288,44 +296,38 @@ class VPMirrorApp(QMainWindow):
             }
             #card_container {
                 background-color: #fbfbfd;
-                border-radius: 14px;
+                border-radius: 12px;
                 border: 1px solid #eaeaec;
             }
             #section_title {
                 color: #86868b;
-                font-size: 11px;
-                font-weight: 700;
+                font-size: 12px;
+                font-weight: 600;
                 text-transform: uppercase;
-                letter-spacing: 0.8px;
+                letter-spacing: 0.5px;
+                margin-bottom: 2px;
             }
-            #status_muted {
-                color: #86868b;
+            #status_text {
+                color: #333336;
                 font-size: 13px;
                 font-weight: 500;
-            }
-            #info_label {
-                color: #1d1d1f;
-                font-size: 13px;
+                line-height: 1.4;
             }
             QComboBox {
                 background-color: #ffffff;
                 color: #1d1d1f;
                 border: 1px solid #d2d2d7;
-                border-radius: 8px;
-                padding: 10px 12px;
+                border-radius: 6px;
+                padding: 8px 12px;
                 font-size: 13px;
             }
             QComboBox::drop-down {
                 border: none;
             }
-            #system_status {
-                color: #86868b;
-                font-size: 13px;
-                margin-top: 4px;
-            }
             #debug_checkbox {
-                color: #d2d2d7;
-                font-size: 11px;
+                color: #a1a1a6;
+                font-size: 12px;
+                margin-left: 4px;
             }
             #debug_checkbox::indicator {
                 width: 12px;
