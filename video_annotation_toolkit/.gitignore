@@ -1,0 +1,16 @@
+# dependencies & build output
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+
+# local video data (large media — keep out of git)
+videos/
+
+# OMC state
+.omc/
+
+# misc
+.DS_Store
+*.local
+*.log
