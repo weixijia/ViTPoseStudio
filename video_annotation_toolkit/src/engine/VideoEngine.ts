@@ -2,18 +2,16 @@ import {
   Input,
   ALL_FORMATS,
   BlobSource,
+  UrlSource,
   CanvasSink,
+  type Source,
 } from 'mediabunny';
 import { buildFrameIndex } from './frameIndex';
 import type { VideoMeta } from '../types';
 import { clamp } from '../utils/time';
 
-export interface ThumbStrip {
-  sheet: HTMLCanvasElement;
-  times: number[]; // timestamp (s) of each thumbnail, left→right
-  thumbW: number;
-  thumbH: number;
-}
+/** A video source: a picked File (drag/drop) or a served URL (auto-load). */
+export type VideoSourceInput = File | { url: string; name: string };
 
 /**
  * Frame-accurate video engine built on Mediabunny (demux) + WebCodecs (decode).
@@ -27,20 +25,48 @@ export class VideoEngine {
   private sink: CanvasSink | null = null;
   private input: Input | null = null;
 
-  /** The loaded File (the PlayLoop builds its own decoder Input from it). */
+  /** The loaded source — File (drag/drop) or served URL (auto-load). */
   file: File | null = null;
+  url: string | null = null;
+  /** A media URL usable by an <audio>/<video> element (object URL for files). */
+  mediaUrl: string | null = null;
+  private objectUrl: string | null = null;
   /** The display canvas the PlayLoop blits onto during playback (registered by VideoCanvas). */
   displayCanvas: HTMLCanvasElement | null = null;
+  /** The frame index currently painted on the display canvas (skeleton syncs to THIS, not the
+   *  scrub target, so the skeleton never lags the RGB during fast scrubbing). */
+  shownFrame = 0;
 
   /** Exact presentation timestamp (seconds) for each frame index, in display order. */
   timestamps: number[] = [];
   meta: VideoMeta | null = null;
 
-  /** Load a file: demux, build the frame index, prepare the decode sink. */
-  async load(file: File): Promise<VideoMeta> {
-    this.dispose();
+  /** Build a fresh Mediabunny Source for the current video (used per Input). */
+  private makeSource(): Source {
+    if (this.file) return new BlobSource(this.file);
+    if (this.url) return new UrlSource(this.url);
+    throw new Error('No video source loaded.');
+  }
 
-    const input = new Input({ formats: ALL_FORMATS, source: new BlobSource(file) });
+  /** A fresh decoder Input over the current source (the PlayLoop uses its own). */
+  createInput(): Input {
+    return new Input({ formats: ALL_FORMATS, source: this.makeSource() });
+  }
+
+  /** Load a File or a served URL: demux, build the frame index, prepare the decode sink. */
+  async load(input0: VideoSourceInput): Promise<VideoMeta> {
+    this.dispose();
+    if (input0 instanceof File) {
+      this.file = input0;
+      this.objectUrl = URL.createObjectURL(input0);
+      this.mediaUrl = this.objectUrl;
+    } else {
+      this.url = input0.url;
+      this.mediaUrl = input0.url;
+    }
+    const name = input0 instanceof File ? input0.name : input0.name;
+
+    const input = this.createInput();
     const track = await input.getPrimaryVideoTrack();
     if (!track) {
       throw new Error('No video track found in this file.');
@@ -61,10 +87,10 @@ export class VideoEngine {
 
     this.input = input;
     this.sink = sink;
-    this.file = file;
+    this.shownFrame = 0;
     this.timestamps = timestamps;
     this.meta = {
-      name: file.name,
+      name,
       width: track.displayWidth,
       height: track.displayHeight,
       durationSec: duration,
@@ -116,51 +142,6 @@ export class VideoEngine {
     return result ? result.canvas : null;
   }
 
-  /**
-   * Generate a horizontal thumbnail sprite-sheet at `count` evenly-spaced times.
-   * Uses a dedicated small-width CanvasSink for speed. Decorative — callers should
-   * tolerate failure gracefully.
-   */
-  async generateThumbStrip(count: number): Promise<ThumbStrip | null> {
-    if (!this.file || !this.meta) return null;
-    const n = clamp(Math.round(count), 4, 40);
-    const thumbW = 96;
-    const thumbH = Math.max(1, Math.round(thumbW * (this.meta.height / this.meta.width)));
-    const dur = this.meta.durationSec;
-    const times = Array.from({ length: n }, (_, i) => ((i + 0.5) * dur) / n);
-
-    const sheet = document.createElement('canvas');
-    sheet.width = thumbW * n;
-    sheet.height = thumbH;
-    const sctx = sheet.getContext('2d');
-    if (!sctx) return null;
-
-    // Use a dedicated Input so thumbnail decoding never contends with the
-    // display sink reading from the main Input.
-    const input = new Input({ formats: ALL_FORMATS, source: new BlobSource(this.file) });
-    try {
-      const track = await input.getPrimaryVideoTrack();
-      if (!track) return null;
-      const thumbSink = new CanvasSink(track, { width: thumbW, height: thumbH, fit: 'cover', poolSize: 1 });
-      let i = 0;
-      for await (const wrapped of thumbSink.canvasesAtTimestamps(times)) {
-        if (wrapped && wrapped.canvas) {
-          sctx.drawImage(wrapped.canvas as CanvasImageSource, i * thumbW, 0, thumbW, thumbH);
-        }
-        i++;
-      }
-    } catch {
-      return null;
-    } finally {
-      try {
-        input.dispose();
-      } catch {
-        /* ignore */
-      }
-    }
-    return { sheet, times, thumbW, thumbH };
-  }
-
   dispose() {
     try {
       this.input?.dispose();
@@ -170,6 +151,12 @@ export class VideoEngine {
     this.input = null;
     this.sink = null;
     this.file = null;
+    this.url = null;
+    if (this.objectUrl) {
+      URL.revokeObjectURL(this.objectUrl);
+      this.objectUrl = null;
+    }
+    this.mediaUrl = null;
     this.displayCanvas = null;
     this.timestamps = [];
     this.meta = null;

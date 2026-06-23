@@ -40,6 +40,7 @@ export default function VideoCanvas() {
       .then((frameCanvas) => {
         if (cancelled || token !== reqToken.current || !frameCanvas) return;
         ctx.drawImage(frameCanvas, 0, 0, canvas.width, canvas.height);
+        engine.shownFrame = currentFrame; // skeleton mirrors the frame actually painted
       })
       .catch(() => {
         /* single-frame decode errors are non-fatal */

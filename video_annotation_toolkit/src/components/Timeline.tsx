@@ -5,12 +5,12 @@ import { rulerStep, formatRulerLabel, snapTime } from '../utils/ruler';
 import type { Rep } from '../types';
 
 // fixed band heights (px)
-const RULER_H = 26;
-const STRIP_H = 60;
-const LANE_H = 46;
-const CANVAS_H = RULER_H + STRIP_H + LANE_H; // 132
-const STRIP_TOP = RULER_H;
-const LANE_TOP = RULER_H + STRIP_H;
+const RULER_H = 24;
+const CLIP_H = 40;
+const LANE_H = 48;
+const CANVAS_H = RULER_H + CLIP_H + LANE_H; // 112
+const CLIP_TOP = RULER_H;
+const LANE_TOP = RULER_H + CLIP_H;
 const EDGE_PX = 7; // segment edge grab zone (screen px)
 
 /** Deterministic, well-spaced color per action id. */
@@ -24,7 +24,7 @@ type DragMode = 'scrub' | 'resizeStart' | 'resizeEnd' | 'moveRep';
 interface DragState {
   mode: DragMode;
   repId?: string;
-  grabOffsetFrames?: number; // for moveRep: pointer frame − rep.startFrame
+  grabOffsetFrames?: number;
   moved: boolean;
   pointerId: number;
 }
@@ -49,11 +49,9 @@ export default function Timeline() {
   const dragRef = useRef<DragState | null>(null);
   const snapGuideRef = useRef<number | null>(null);
   const altRef = useRef(false);
-  const prevPxRef = useRef(0); // 0 → the initial 0→fit transition intentionally skips anchoring
+  const prevPxRef = useRef(0); // 0 → the initial 0→default transition intentionally skips anchoring
   const zoomFocusRef = useRef<{ time: number; screenX: number } | null>(null);
   const rafRef = useRef(0);
-  const thumbVersionRef = useRef(0);
-  const thumbStripRef = useRef<Awaited<ReturnType<typeof engine.generateThumbStrip>>>(null);
 
   const dur = meta?.durationSec ?? 0;
   const fps = meta?.fps ?? 30;
@@ -93,46 +91,50 @@ export default function Timeline() {
     const t0 = scrollX / pxPerSec;
     const t1 = (scrollX + viewW) / pxPerSec;
     const xOf = (t: number) => t * pxPerSec - scrollX;
+    const { majorSec, minorSec, labelMode } = rulerStep(pxPerSec, fps);
 
     // backgrounds
     ctx.fillStyle = '#0e1218';
     ctx.fillRect(0, 0, viewW, CANVAS_H);
-    ctx.fillStyle = '#11161e';
-    ctx.fillRect(0, STRIP_TOP, viewW, STRIP_H);
     ctx.fillStyle = '#0c1016';
     ctx.fillRect(0, LANE_TOP, viewW, LANE_H);
 
-    // ---- filmstrip ----
-    const strip = thumbStripRef.current;
-    if (strip && strip.times.length > 0) {
-      const span = dur / strip.times.length;
-      const drawW = Math.max(1, span * pxPerSec);
-      for (let i = 0; i < strip.times.length; i++) {
-        const leftT = strip.times[i] - span / 2;
-        const x = xOf(leftT);
-        if (x + drawW < 0 || x > viewW) continue;
-        if (drawW < 22) {
-          ctx.fillStyle = i % 2 ? '#1b2230' : '#202838';
-          ctx.fillRect(x, STRIP_TOP + 3, Math.ceil(drawW), STRIP_H - 6);
-        } else {
-          ctx.drawImage(strip.sheet, i * strip.thumbW, 0, strip.thumbW, strip.thumbH, x, STRIP_TOP + 3, drawW, STRIP_H - 6);
-        }
+    // ---- clip band (clean editor-style media bar, no thumbnails) ----
+    const clipX0 = xOf(0);
+    const clipX1 = xOf(dur);
+    const grad = ctx.createLinearGradient(0, CLIP_TOP, 0, CLIP_TOP + CLIP_H);
+    grad.addColorStop(0, '#2a4660');
+    grad.addColorStop(1, '#1a2c3e');
+    ctx.fillStyle = grad;
+    const cx = Math.max(clipX0, 0);
+    const cw = Math.min(clipX1, viewW) - cx;
+    if (cw > 0) {
+      ctx.fillRect(cx, CLIP_TOP + 4, cw, CLIP_H - 8);
+      // subtle gridlines inside the clip band at the ruler's minor interval
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.beginPath();
+      for (let t = Math.floor(t0 / minorSec) * minorSec; t <= t1; t += minorSec) {
+        const x = xOf(t);
+        ctx.moveTo(x + 0.5, CLIP_TOP + 4);
+        ctx.lineTo(x + 0.5, CLIP_TOP + CLIP_H - 4);
       }
-    } else {
-      ctx.fillStyle = '#8a93a6';
-      ctx.font = '11px -apple-system, sans-serif';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('generating thumbnails…', 10, STRIP_TOP + STRIP_H / 2);
+      ctx.stroke();
+      // top highlight line
+      ctx.strokeStyle = 'rgba(120,170,210,0.35)';
+      ctx.beginPath();
+      ctx.moveTo(cx, CLIP_TOP + 4.5);
+      ctx.lineTo(cx + cw, CLIP_TOP + 4.5);
+      ctx.stroke();
     }
-    // strip separators
+
+    // band separators
     ctx.strokeStyle = '#070a0e';
     ctx.beginPath();
-    ctx.moveTo(0, STRIP_TOP + 0.5); ctx.lineTo(viewW, STRIP_TOP + 0.5);
-    ctx.moveTo(0, LANE_TOP + 0.5); ctx.lineTo(viewW, LANE_TOP + 0.5);
+    ctx.moveTo(0, LANE_TOP + 0.5);
+    ctx.lineTo(viewW, LANE_TOP + 0.5);
     ctx.stroke();
 
     // ---- ruler ----
-    const { majorSec, minorSec, labelMode } = rulerStep(pxPerSec, fps);
     ctx.textBaseline = 'top';
     ctx.font = '10px ui-monospace, monospace';
     // minor ticks
@@ -144,9 +146,8 @@ export default function Timeline() {
       ctx.lineTo(x + 0.5, RULER_H);
     }
     ctx.stroke();
-    // major ticks + labels
+    // major ticks
     ctx.strokeStyle = '#3a4250';
-    ctx.fillStyle = '#9aa3b5';
     ctx.beginPath();
     for (let t = Math.floor(t0 / majorSec) * majorSec; t <= t1; t += majorSec) {
       const x = xOf(t);
@@ -154,23 +155,27 @@ export default function Timeline() {
       ctx.lineTo(x + 0.5, RULER_H);
     }
     ctx.stroke();
+    // major labels
+    ctx.fillStyle = '#9aa3b5';
     for (let t = Math.floor(t0 / majorSec) * majorSec; t <= t1; t += majorSec) {
-      if (t < 0) continue;
-      const x = xOf(t);
-      ctx.fillText(formatRulerLabel(t, labelMode, fps), x + 3, 3);
+      if (t < -1e-6) continue;
+      ctx.fillText(formatRulerLabel(t, labelMode, fps), xOf(t) + 3, 3);
     }
     // pinned t=0 label
     if (scrollX > 4) {
       ctx.fillStyle = '#0e1218';
-      ctx.fillRect(0, 0, 30, RULER_H);
+      ctx.fillRect(0, 0, 34, RULER_H);
       ctx.fillStyle = '#7b8499';
-      ctx.fillText('0', 3, 3);
+      ctx.fillText(formatRulerLabel(0, labelMode, fps), 3, 3);
     }
 
     // ---- rep segments ----
     for (const rep of reps) {
-      const x0 = frameToContentXScreen(rep.startFrame, pxPerSec, scrollX);
-      const endT = rep.endFrame + 1 < meta.frameCount ? engine.timeOfFrame(rep.endFrame + 1) : engine.timeOfFrame(rep.endFrame) + 1 / fps;
+      const x0 = engine.timeOfFrame(rep.startFrame) * pxPerSec - scrollX;
+      const endT =
+        rep.endFrame + 1 < meta.frameCount
+          ? engine.timeOfFrame(rep.endFrame + 1)
+          : engine.timeOfFrame(rep.endFrame) + 1 / fps;
       const x1 = endT * pxPerSec - scrollX;
       const w = Math.max(3, x1 - x0);
       if (x0 + w < 0 || x0 > viewW) continue;
@@ -178,7 +183,6 @@ export default function Timeline() {
       const selected = rep.id === selectedRepId;
       ctx.fillStyle = `hsl(${hue} 62% ${selected ? 54 : 40}%)`;
       ctx.fillRect(x0, LANE_TOP + 7, w, LANE_H - 14);
-      // edge handles
       ctx.fillStyle = `hsl(${hue} 70% 72%)`;
       ctx.fillRect(x0, LANE_TOP + 7, 2, LANE_H - 14);
       ctx.fillRect(x0 + w - 2, LANE_TOP + 7, 2, LANE_H - 14);
@@ -191,6 +195,8 @@ export default function Timeline() {
         ctx.font = '11px -apple-system, sans-serif';
         ctx.textBaseline = 'middle';
         ctx.fillText(`${rep.actionType} #${rep.repIndex}`, x0 + 5, LANE_TOP + LANE_H / 2, w - 10);
+        ctx.textBaseline = 'top';
+        ctx.font = '10px ui-monospace, monospace';
       }
     }
 
@@ -200,14 +206,14 @@ export default function Timeline() {
       const b = outPoint ?? inPoint!;
       const lo = Math.min(a, b);
       const hi = Math.max(a, b);
-      const xa = frameToContentXScreen(lo, pxPerSec, scrollX);
+      const xa = engine.timeOfFrame(lo) * pxPerSec - scrollX;
       const xbT = hi + 1 < meta.frameCount ? engine.timeOfFrame(hi + 1) : engine.timeOfFrame(hi) + 1 / fps;
       const xb = xbT * pxPerSec - scrollX;
       ctx.fillStyle = 'rgba(255, 196, 0, 0.14)';
       ctx.fillRect(xa, 0, Math.max(2, xb - xa), CANVAS_H);
       for (const [pt, color] of [[inPoint, '#ffd23f'], [outPoint, '#ff8c42']] as const) {
         if (pt === null) continue;
-        const x = frameToContentXScreen(pt, pxPerSec, scrollX);
+        const x = engine.timeOfFrame(pt) * pxPerSec - scrollX;
         ctx.strokeStyle = color;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
@@ -253,7 +259,9 @@ export default function Timeline() {
   useEffect(() => {
     scheduleDraw();
   }, [scheduleDraw, meta, pxPerSec, reps, inPoint, outPoint, selectedRepId]);
-  useEffect(() => { positionPlayhead(); }, [positionPlayhead, currentFrame, pxPerSec]);
+  useEffect(() => {
+    positionPlayhead();
+  }, [positionPlayhead, currentFrame, pxPerSec]);
 
   // ---- fit-to-viewport measurement ----
   useEffect(() => {
@@ -287,45 +295,7 @@ export default function Timeline() {
     prevPxRef.current = pxPerSec;
     positionPlayhead();
     scheduleDraw();
-    maybeRegenThumbs();
   }, [pxPerSec, meta, scheduleDraw, positionPlayhead]);
-
-  // ---- thumbnail filmstrip generation (debounced; reads live zoom) ----
-  const thumbDebounceRef = useRef(0);
-  const maybeRegenThumbs = useCallback(() => {
-    if (!meta) return;
-    if (thumbDebounceRef.current) clearTimeout(thumbDebounceRef.current);
-    thumbDebounceRef.current = window.setTimeout(() => {
-      const px = useStore.getState().pxPerSec;
-      // target count ~ fill the width with ~110px thumbs across the whole clip
-      const desired = Math.round((meta.durationSec * px) / 110);
-      const target = Math.max(8, Math.min(40, desired));
-      const have = thumbStripRef.current?.times.length ?? 0;
-      if (have && Math.abs(have - target) < 4) return;
-      const version = ++thumbVersionRef.current;
-      engine
-        .generateThumbStrip(target)
-        .then((strip) => {
-          if (version !== thumbVersionRef.current) return; // superseded
-          if (strip) {
-            thumbStripRef.current = strip;
-            scheduleDraw();
-          }
-        })
-        .catch(() => {});
-    }, 250);
-  }, [meta, scheduleDraw]);
-
-  // generate initial strip on load
-  useEffect(() => {
-    thumbStripRef.current = null;
-    thumbVersionRef.current++;
-    if (meta) {
-      // debounce a touch so fit-zoom settles first
-      const id = setTimeout(maybeRegenThumbs, 150);
-      return () => clearTimeout(id);
-    }
-  }, [meta, maybeRegenThumbs]);
 
   // ---- auto-follow during playback ----
   useEffect(() => {
@@ -386,7 +356,7 @@ export default function Timeline() {
       const ex = eT * pxPerSec - scrollX;
       if (Math.abs(screenX - sx) <= EDGE_PX) return { rep: r, edge: 'start' };
       if (Math.abs(screenX - ex) <= EDGE_PX) return { rep: r, edge: 'end' };
-      if (timeFrame >= r.startFrame && timeFrame <= r.endFrame) return null; // body handled separately
+      if (timeFrame >= r.startFrame && timeFrame <= r.endFrame) return null;
     }
     return null;
   };
@@ -454,6 +424,7 @@ export default function Timeline() {
     const scrollX = sc.scrollLeft;
     const s = useStore.getState();
     s.setPlaying(false);
+    snapGuideRef.current = null;
     const t = clientXToTime(e.clientX);
     const frame = engine.frameAtTime(t);
 
@@ -493,7 +464,6 @@ export default function Timeline() {
     const drag = dragRef.current;
     const sc = scrollRef.current;
     if (sc) sc.releasePointerCapture?.(e.pointerId);
-    // a click (no move) on a rep body → seek to its start
     if (drag && drag.mode === 'moveRep' && !drag.moved && drag.repId) {
       const rep = useStore.getState().reps.find((r) => r.id === drag.repId);
       if (rep) useStore.getState().setCurrentFrame(rep.startFrame);
@@ -510,6 +480,8 @@ export default function Timeline() {
     s.setPxPerSec(s.pxPerSec * factor);
   };
   const sliderPos = fitZoom > 0 && maxPxPerSec > fitZoom ? Math.log(pxPerSec / fitZoom) / Math.log(maxPxPerSec / fitZoom) : 0;
+  const atMinZoom = fitZoom > 0 && pxPerSec <= fitZoom * 1.001;
+  const atMaxZoom = pxPerSec >= maxPxPerSec * 0.999;
   const onSlider = (pos: number) => {
     if (fitZoom <= 0) return;
     zoomFocusRef.current = null;
@@ -521,7 +493,8 @@ export default function Timeline() {
   return (
     <div className="timeline">
       <div className="timeline-toolbar">
-        <button title="Zoom out ([)" onClick={() => zoomBy(1 / 1.5)}>－</button>
+        <span className="tl-label">Zoom</span>
+        <button aria-label="Zoom out" title="Zoom out  ( [ )" disabled={atMinZoom} onClick={() => zoomBy(1 / 1.5)}>－</button>
         <input
           className="zoom-slider"
           type="range"
@@ -530,24 +503,24 @@ export default function Timeline() {
           step={0.001}
           value={Math.max(0, Math.min(1, sliderPos))}
           onChange={(e) => onSlider(Number(e.target.value))}
-          title="Zoom"
+          title="Drag to zoom the timeline in/out"
         />
-        <button title="Zoom in (])" onClick={() => zoomBy(1.5)}>＋</button>
-        <button title="Fit to window (Shift+Z)" onClick={() => useStore.getState().zoomToFit()}>⤢ Fit</button>
+        <button aria-label="Zoom in" title="Zoom in  ( ] )" disabled={atMaxZoom} onClick={() => zoomBy(1.5)}>＋</button>
+        <button title="Zoom out so the whole video fits in view  (Shift+Z)" onClick={() => useStore.getState().zoomToFit()}>Fit all</button>
         <span className="tl-divider" />
         <button
           className={snapEnabled ? 'active' : ''}
-          title="Toggle snapping (S) — hold Alt to bypass"
+          title="Snap a rep's edges to the playhead / other reps while you drag them. Hold Alt to bypass.  (S)"
           onClick={() => useStore.getState().toggleSnap()}
         >
-          ⌁ Snap
+          Snap edges: {snapEnabled ? 'on' : 'off'}
         </button>
         <button
           className={followMode === 'smooth' ? 'active' : ''}
-          title="Playback follow mode"
+          title="How the timeline scrolls to keep up with the playhead during playback: Page = jump a page at a time; Center = keep the playhead centered."
           onClick={() => useStore.getState().setFollowMode(followMode === 'page' ? 'smooth' : 'page')}
         >
-          ⇄ {followMode === 'smooth' ? 'Center' : 'Page'}
+          Auto-scroll: {followMode === 'smooth' ? 'center' : 'page'}
         </button>
         <span className="tl-spacer" />
         <span className="tl-readout">{reps.length} reps · {meta.frameCount} frames</span>
@@ -571,9 +544,4 @@ export default function Timeline() {
       </div>
     </div>
   );
-}
-
-/** Screen-space x for a frame's start, given scroll. (module helper to keep draw tidy) */
-function frameToContentXScreen(frame: number, pxPerSec: number, scrollX: number): number {
-  return engine.timeOfFrame(frame) * pxPerSec - scrollX;
 }

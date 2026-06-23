@@ -1,5 +1,5 @@
+import { useEffect, useRef } from 'react';
 import { useStore } from '../state/useStore';
-import { engine } from '../engine/engineInstance';
 import { formatClock } from '../utils/time';
 
 export default function RepTable() {
@@ -12,6 +12,12 @@ export default function RepTable() {
   const setPlaying = useStore((s) => s.setPlaying);
   const deleteRep = useStore((s) => s.deleteRep);
   const updateRep = useStore((s) => s.updateRep);
+  const selectedRowRef = useRef<HTMLTableRowElement>(null);
+
+  // keep the selected rep visible when navigating with Tab / Shift+Tab
+  useEffect(() => {
+    selectedRowRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [selectedRepId]);
 
   if (!meta) return null;
 
@@ -25,9 +31,8 @@ export default function RepTable() {
       <h2>Reps <span className="count">{reps.length}</span></h2>
       {reps.length === 0 ? (
         <div className="empty">
-          <div className="empty-icon">⟦ ⟧</div>
-          <p>No reps yet.</p>
-          <p className="empty-sub">Mark In/Out on the timeline and press <kbd>Enter</kbd>.</p>
+          <p className="empty-title">No reps yet</p>
+          <p className="empty-sub">Mark <kbd>I</kbd> and <kbd>O</kbd> around one movement cycle, then press <kbd>Enter</kbd>.</p>
         </div>
       ) : (
         <div className="rep-table-scroll">
@@ -50,6 +55,7 @@ export default function RepTable() {
                 return (
                   <tr
                     key={r.id}
+                    ref={r.id === selectedRepId ? selectedRowRef : undefined}
                     className={`${r.id === selectedRepId ? 'selected' : ''} ${isCurrent ? 'current' : ''}`}
                     onClick={() => selectRep(r.id)}
                   >
@@ -76,24 +82,9 @@ export default function RepTable() {
                     </td>
                     <td className="row-actions">
                       <button
-                        title="Set start to current frame"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const f = useStore.getState().currentFrame;
-                          if (f <= r.endFrame) updateRep(r.id, { startFrame: f, startTimeSec: engine.timeOfFrame(f) });
-                        }}
-                      >⟦</button>
-                      <button
-                        title="Set end to current frame"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const f = useStore.getState().currentFrame;
-                          if (f >= r.startFrame) updateRep(r.id, { endFrame: f, endTimeSec: engine.timeOfFrame(f) });
-                        }}
-                      >⟧</button>
-                      <button
                         className="danger"
-                        title="Delete rep (Del)"
+                        aria-label={`Delete rep ${r.repIndex}`}
+                        title="Delete rep (Del). Adjust edges by dragging on the timeline, or Shift+I / Shift+O."
                         onClick={(e) => { e.stopPropagation(); deleteRep(r.id); }}
                       >✕</button>
                     </td>

@@ -1,12 +1,15 @@
 import { useRef } from 'react';
 import { useStore } from '../state/useStore';
-import { repsToCsv, downloadText, baseName } from '../utils/csv';
+import { engine } from '../engine/engineInstance';
+import { repsToCsv, poseErrorsToCsv, downloadText, baseName } from '../utils/csv';
 import { exportActionsFile, importActionsFile, mergeActions, saveCustomActions } from '../utils/actionStore';
 import type { ProjectState } from '../types';
 
 export default function ExportBar() {
   const meta = useStore((s) => s.meta);
   const reps = useStore((s) => s.reps);
+  const poseErrors = useStore((s) => s.poseErrors);
+  const poseDirty = useStore((s) => s.poseDirty);
   const annotator = useStore((s) => s.annotator);
   const customActions = useStore((s) => s.customActions);
   const setCustomActions = useStore((s) => s.setCustomActions);
@@ -16,11 +19,24 @@ export default function ExportBar() {
 
   if (!meta) return null;
 
+  const poseErrorCount = Object.keys(poseErrors).length;
+
   const exportCsv = () => {
     downloadText(`${baseName(meta.name)}_reps.csv`, repsToCsv(reps, meta, annotator), 'text/csv');
   };
 
+  const exportPoseCsv = () => {
+    useStore.getState().savePoseDraft(); // commit the frame being edited
+    const pe = useStore.getState().poseErrors;
+    downloadText(
+      `${baseName(meta.name)}_pose_errors.csv`,
+      poseErrorsToCsv(pe, meta, (f) => engine.timeOfFrame(f)),
+      'text/csv',
+    );
+  };
+
   const saveProject = () => {
+    useStore.getState().savePoseDraft(); // commit the frame being edited
     const project: ProjectState = {
       version: 2,
       videoName: meta.name,
@@ -30,6 +46,7 @@ export default function ExportBar() {
       annotator,
       reps,
       customActions,
+      poseErrors: useStore.getState().poseErrors,
       savedAt: new Date().toISOString(),
     };
     downloadText(`${baseName(meta.name)}_project.json`, JSON.stringify(project, null, 2), 'application/json');
@@ -66,7 +83,8 @@ export default function ExportBar() {
 
   return (
     <div className="export-bar">
-      <button onClick={exportCsv} disabled={reps.length === 0} title="Export one CSV row per rep">⬇ CSV</button>
+      <button onClick={exportCsv} disabled={reps.length === 0} title="Export one CSV row per rep">⬇ Reps</button>
+      <button onClick={exportPoseCsv} disabled={poseErrorCount === 0 && !poseDirty} title="Export one CSV row per flagged frame">⬇ Pose</button>
       <button onClick={saveProject} className="ghost" title="Save annotation project (JSON)">💾 Save</button>
       <button onClick={() => projectFileRef.current?.click()} className="ghost" title="Load a saved project">📂 Load</button>
       <span className="tl-divider" />

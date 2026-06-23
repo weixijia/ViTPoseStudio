@@ -1,0 +1,4 @@
+# Preprocessing deps for tools/extract_mediapipe.py (NOT needed to run the web app).
+# Install in a Python 3.9–3.12 environment:  pip install -r tools/requirements.txt
+mediapipe>=0.10
+opencv-python>=4.8

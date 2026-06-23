@@ -38,7 +38,14 @@ export interface ProjectState {
   annotator: string;
   reps: Rep[];
   customActions?: ActionTypeDef[];
+  poseErrors?: Record<number, PoseError>;
   savedAt: string;
+}
+
+/** Per-frame pose-quality flag: predefined labels + free note. */
+export interface PoseError {
+  labels: string[];
+  note: string;
 }
 
 /** Persisted per-video custom action file (`<videobasename>_actions.json`). */

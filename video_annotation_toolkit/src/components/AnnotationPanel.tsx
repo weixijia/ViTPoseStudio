@@ -68,7 +68,12 @@ export default function AnnotationPanel() {
             </option>
           ))}
         </select>
-        <button className="add-action" title="Add a custom action type" onClick={() => setAdding((v) => !v)}>
+        <button
+          className="add-action"
+          aria-label={adding ? 'Cancel custom action' : 'Add a custom action type'}
+          title="Add a custom action type"
+          onClick={() => setAdding((v) => !v)}
+        >
           {adding ? '×' : '＋'}
         </button>
       </div>
@@ -101,11 +106,10 @@ export default function AnnotationPanel() {
         <button onClick={clearInOut} title="Clear (Esc)" className="ghost">Clear</button>
       </div>
 
-      <label className="field-label">Notes (optional)</label>
       <textarea
         className="notes-input"
         rows={2}
-        placeholder="e.g. partial rep, paused at bottom…"
+        placeholder="rep note (optional) — drag corner to expand"
         value={pendingNotes}
         onChange={(e) => setPendingNotes(e.target.value)}
       />
@@ -115,8 +119,7 @@ export default function AnnotationPanel() {
       </button>
 
       <p className="hint">
-        Mark In/Out at the start &amp; end of one movement cycle, then Add Rep.
-        <kbd>I</kbd>/<kbd>O</kbd> · <kbd>Enter</kbd> · <kbd>←</kbd>/<kbd>→</kbd> step · <kbd>?</kbd> all keys
+        <kbd>I</kbd>/<kbd>O</kbd> mark · <kbd>Enter</kbd> add · <kbd>←</kbd>/<kbd>→</kbd> step · <kbd>?</kbd> all keys
       </p>
     </div>
   );

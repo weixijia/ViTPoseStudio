@@ -13,8 +13,13 @@ each movement cycle (a *rep*), tag it with an action type, optionally add notes,
   **WebCodecs API**, addressing every frame by an exact integer index built from the file's
   packet timestamps. The frame numbers written to the CSV are exact.
 - **100% local.** Your video never leaves the machine — no upload, no backend, no server.
-- **Editor-grade timeline.** Thumbnail filmstrip, adaptive ruler, draggable playhead, zoom,
-  and draggable rep boundaries with snapping.
+- **Editor-grade timeline.** A clean clip track, adaptive ruler (frames↔seconds↔minutes),
+  draggable playhead, zoom, and draggable rep boundaries with snapping.
+- **Synced audio.** Plays the file's audio track in sync with the video (audio is the
+  playback clock); mute toggle in the transport bar.
+- **Pose-quality review.** Optionally pre-extract a MediaPipe skeleton and review it
+  frame-by-frame in a split **RGB | skeleton** view — flag frames with bad tracking
+  (occlusion, drift, etc.) plus a free-text note. Exports a second CSV.
 
 ---
 
@@ -81,10 +86,15 @@ fully client-side — there is NO backend to configure. Do the following, detect
    `ffmpeg -i "<input>" -c:v libx264 -crf 18 -preset slow -c:a aac "<input-basename>_h264.mp4"`
    If ffmpeg is not installed, tell me how to install it (brew/apt/winget) and ask whether to proceed.
 
-4. Start the dev server: `npm run dev`. It serves http://localhost:5180 and tries to open a browser.
+4. (Optional — pose-quality review) If I want the MediaPipe skeleton view, in a Python 3.9–3.12
+   environment run `pip install -r tools/requirements.txt` then `python tools/extract_mediapipe.py`
+   to pre-extract skeletons for the videos in `./videos` (writes `./mediapipe_skeleton/`). Skip this
+   if I only need rep counting.
+
+5. Start the dev server: `npm run dev`. It serves http://localhost:5180 and tries to open a browser.
    Tell me to open it in **Chrome or Edge** (not Safari/Firefox).
 
-5. Verify it works: confirm the page loads with a "Drop a video to start" screen and no console
+6. Verify it works: confirm the page loads with a "Drop a video to start" screen and no console
    errors. If I report that a video won't load / shows a "cannot be decoded" message, it's the
    HEVC issue from step 3 — transcode that file to H.264 and retry.
 
@@ -129,10 +139,11 @@ Press **`?`** in the app for the full overlay.
 
 A custom editor-style timeline (think 剪映 / Final Cut):
 
-- **Filmstrip** — periodic thumbnails of the clip; cadence adapts to zoom.
+- **Clip track** — a clean media band representing the video, with subtle gridlines (no thumbnails).
 - **Adaptive ruler** — tick spacing/labels switch between frames, seconds, and minutes as you zoom.
 - **Playhead** — drag the handle (or click/drag the ruler) to scrub; it auto-follows during playback.
-- **Zoom** — toolbar `－ / slider / ＋ / ⤢ Fit`, `[`/`]`, or `Cmd/Ctrl`+scroll. Default = fit the whole clip.
+- **Zoom** — toolbar `－ / slider / ＋ / ⤢ Fit`, `[`/`]`, or `Cmd/Ctrl`+scroll. Opens at a fine,
+  seconds-level zoom; **⤢ Fit** (`Shift+Z`) shows the whole clip.
 - **Rep segments** — each rep is a labeled colored bar. **Drag its left/right edge** to adjust the
   start/end frame, or drag the body to move it. Boundaries **snap** to the playhead, other reps, and t=0
   (toggle with `S`, hold `Alt` to bypass).
@@ -162,21 +173,63 @@ portable `<videoname>_actions.json` (e.g. to share a label set with other annota
 
 ---
 
+## Pose-quality review (MediaPipe)
+
+A second annotation dimension: flag frames where the pose tracker is wrong. Because annotators may
+not have MediaPipe installed, skeletons are **pre-extracted** once, up front.
+
+### 1. Pre-extract skeletons (one-time, per video)
+
+Put videos in `videos/`, then run (Python 3.9–3.12):
+
+```bash
+pip install -r tools/requirements.txt          # mediapipe + opencv (one time)
+python tools/extract_mediapipe.py              # processes every video in ./videos
+# python tools/extract_mediapipe.py --model-complexity 0   # faster, lower accuracy
+```
+
+This writes a frame-aligned `mediapipe_skeleton/<video>.json` per video plus a `manifest.json`.
+Both `videos/` and `mediapipe_skeleton/` are git-ignored.
+
+### 2. Annotate
+
+Run `npm run dev`. The start screen lists **pre-processed videos** — pick one and it auto-loads the
+RGB video **and** its skeleton (the video streams via HTTP range requests, no upload). The stage
+splits in two: **left = RGB**, **right = MediaPipe skeleton** drawn over a dimmed copy of the frame
+(toggle the backdrop with **RGB on/off**).
+
+In the **Pose Review** panel, for the current frame toggle one or more error labels
+(`Q W E R T Y`) and/or type an `error_note`. Flagged frames get a red border on the skeleton panel
+and appear in a jump-list. It's per-frame — most frames need nothing. Edit the label set in
+`src/config/poseErrors.config.ts`.
+
+---
+
 ## Output CSV
 
-One row per rep:
+**Reps** — one row per rep (`⬇ Reps`):
 
 ```
 video_filename, video_fps, action_type, rep_index,
-start_frame, end_frame, start_time_sec, end_time_sec, duration_sec, annotator, notes
+start_frame, end_frame, n_frames, start_time_sec, end_time_sec, duration_sec, annotator, notes
 ```
 
 - `rep_index` is per `action_type`, numbered by start-frame order with no gaps (deleting rep #2 of an
   action renumbers the rest to 1, 2, …).
 - `start_frame`/`end_frame` are exact integer frame indices; the `*_time_sec` columns are the exact
   presentation timestamps of those frames.
+- `n_frames` = inclusive frame count (`end_frame − start_frame + 1`, matches the UI); `duration_sec` =
+  elapsed time between the two boundary frames (`end_time_sec − start_time_sec`).
 
-Change the schema in **`src/utils/csv.ts`** (the `COLUMNS` array) if you need different columns.
+**Pose errors** — one row per flagged frame (`⬇ Pose`, only when a skeleton is loaded):
+
+```
+video_filename, frame, time_sec, labels, error_note
+```
+
+- `labels` is a `;`-separated list of the toggled error labels for that frame.
+
+Change the schemas in **`src/utils/csv.ts`** if you need different columns.
 
 ---
 
@@ -244,7 +297,9 @@ video_annotation_toolkit/
 
 On load, Mediabunny demuxes the file and we walk the encoded packets (no decoding) to build an exact
 `frame → presentation-timestamp` table. Seeking/stepping addresses frames by integer index and decodes
-exactly that frame via a WebCodecs-backed `CanvasSink`. Playback uses Mediabunny's sequential canvas
-iterator (decodes in order, paced to a wall clock) for smoothness, while paused frames stay exact. The
-timeline is a windowed canvas; the playhead and rep segments map between frame indices and pixels through
-the same timestamp table, so every annotation is frame-accurate.
+exactly that frame via a WebCodecs-backed `CanvasSink`. During playback the file's audio plays natively
+through a hidden `<audio>` element and acts as the master clock; Mediabunny's sequential canvas iterator
+decodes video frames in order and paces them to that audio clock (falling back to a wall clock if audio
+can't play), while paused frames stay exact. The timeline is a windowed canvas; the playhead and rep
+segments map between frame indices and pixels through the same timestamp table, so every annotation is
+frame-accurate.

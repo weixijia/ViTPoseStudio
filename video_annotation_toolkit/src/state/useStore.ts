@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Rep, VideoMeta, ProjectState, ActionTypeDef } from '../types';
+import type { Rep, VideoMeta, ProjectState, ActionTypeDef, PoseError } from '../types';
 import { ACTION_TYPES } from '../config/actions.config';
 import { saveCustomActions } from '../utils/actionStore';
 
@@ -11,12 +11,16 @@ function newId(): string {
 
 export type FollowMode = 'page' | 'smooth';
 
+/** Default timeline zoom (px per second) on load — fine enough for a seconds-level ruler. */
+const DEFAULT_PX_PER_SEC = 18;
+
 interface AppState {
   // ---- video / playback ----
   meta: VideoMeta | null;
   currentFrame: number;
   isPlaying: boolean;
   speed: number;
+  muted: boolean;
 
   // ---- timeline ----
   pxPerSec: number;
@@ -35,6 +39,16 @@ interface AppState {
   annotator: string;
   customActions: ActionTypeDef[];
 
+  // ---- pose-quality review (MediaPipe skeleton) ----
+  poseErrors: Record<number, PoseError>; // committed (drives CSV, timeline, flagged list)
+  // draft for the frame currently being edited (committed only on Save / when leaving the frame)
+  poseDraftFrame: number | null;
+  poseDraftLabels: string[];
+  poseDraftNote: string;
+  poseDirty: boolean;
+  skeletonBackdrop: boolean;
+  hasSkeleton: boolean;
+
   // ---- ui ----
   showShortcuts: boolean;
 
@@ -45,6 +59,7 @@ interface AppState {
   setPlaying: (playing: boolean) => void;
   togglePlay: () => void;
   setSpeed: (speed: number) => void;
+  toggleMuted: () => void;
 
   // ---- timeline actions ----
   setPxPerSec: (px: number) => void;
@@ -73,6 +88,16 @@ interface AppState {
   setCustomActions: (list: ActionTypeDef[]) => void;
   addCustomAction: (def: ActionTypeDef) => void;
 
+  // ---- pose-quality actions (draft → Save) ----
+  beginPoseDraft: (frame: number) => void;
+  toggleDraftLabel: (labelId: string) => void;
+  setDraftNote: (note: string) => void;
+  savePoseDraft: () => void;
+  revertPoseDraft: () => void;
+  clearPoseFrame: (frame: number) => void;
+  toggleSkeletonBackdrop: () => void;
+  setHasSkeleton: (has: boolean) => void;
+
   // ---- ui actions ----
   toggleShortcuts: () => void;
 
@@ -100,11 +125,25 @@ function renumberReps(reps: Rep[]): Rep[] {
   });
 }
 
+/** Commit a draft into the committed pose-errors map (delete when empty). */
+function commitDraft(
+  map: Record<number, PoseError>,
+  frame: number,
+  labels: string[],
+  note: string,
+): Record<number, PoseError> {
+  const next = { ...map };
+  if (labels.length === 0 && !note.trim()) delete next[frame];
+  else next[frame] = { labels: [...labels], note };
+  return next;
+}
+
 export const useStore = create<AppState>((set, get) => ({
   meta: null,
   currentFrame: 0,
   isPlaying: false,
   speed: 1,
+  muted: false,
 
   pxPerSec: 0,
   fitZoom: 0,
@@ -121,6 +160,14 @@ export const useStore = create<AppState>((set, get) => ({
   annotator: '',
   customActions: [],
 
+  poseErrors: {},
+  poseDraftFrame: null,
+  poseDraftLabels: [],
+  poseDraftNote: '',
+  poseDirty: false,
+  skeletonBackdrop: true,
+  hasSkeleton: false,
+
   showShortcuts: false,
 
   setMeta: (meta) => set({ meta }),
@@ -129,6 +176,7 @@ export const useStore = create<AppState>((set, get) => ({
   setPlaying: (playing) => set({ isPlaying: playing }),
   togglePlay: () => set({ isPlaying: !get().isPlaying }),
   setSpeed: (speed) => set({ speed }),
+  toggleMuted: () => set({ muted: !get().muted }),
 
   setPxPerSec: (px) => {
     const { fitZoom, maxPxPerSec } = get();
@@ -137,9 +185,15 @@ export const useStore = create<AppState>((set, get) => ({
     set({ pxPerSec: Math.min(hi, Math.max(lo, px)) });
   },
   setFitZoom: (fit) => {
-    const { pxPerSec } = get();
-    // initialize zoom to "fit" on first measure, and never allow zooming out past fit
-    const next = pxPerSec <= 0 || pxPerSec < fit ? fit : pxPerSec;
+    const { pxPerSec, maxPxPerSec } = get();
+    let next = pxPerSec;
+    if (pxPerSec <= 0) {
+      // first measure: default to a fine, seconds-level zoom (not the whole clip,
+      // which for a long video forces a coarse minutes-scale ruler). Never below fit.
+      next = Math.min(maxPxPerSec, Math.max(DEFAULT_PX_PER_SEC, fit));
+    } else if (pxPerSec < fit) {
+      next = fit; // enforce zoom-out floor
+    }
     set({ fitZoom: fit, pxPerSec: next });
   },
   zoomToFit: () => set({ pxPerSec: get().fitZoom }),
@@ -233,12 +287,74 @@ export const useStore = create<AppState>((set, get) => ({
     if (name) saveCustomActions(name, next);
   },
 
+  beginPoseDraft: (frame) => {
+    const s = get();
+    if (s.poseDraftFrame === frame) return; // already editing this frame — keep the draft
+    let poseErrors = s.poseErrors;
+    // auto-flush a dirty draft from the frame we're leaving (no silent data loss)
+    if (s.poseDirty && s.poseDraftFrame !== null) {
+      poseErrors = commitDraft(poseErrors, s.poseDraftFrame, s.poseDraftLabels, s.poseDraftNote);
+    }
+    const committed = poseErrors[frame];
+    set({
+      poseErrors,
+      poseDraftFrame: frame,
+      poseDraftLabels: committed ? [...committed.labels] : [],
+      poseDraftNote: committed ? committed.note : '',
+      poseDirty: false,
+    });
+  },
+  toggleDraftLabel: (labelId) => {
+    const frame = get().currentFrame;
+    if (get().poseDraftFrame !== frame) get().beginPoseDraft(frame);
+    const have = get().poseDraftLabels;
+    const labels = have.includes(labelId) ? have.filter((l) => l !== labelId) : [...have, labelId];
+    set({ poseDraftLabels: labels, poseDirty: true });
+  },
+  setDraftNote: (note) => {
+    const frame = get().currentFrame;
+    if (get().poseDraftFrame !== frame) get().beginPoseDraft(frame);
+    set({ poseDraftNote: note, poseDirty: true });
+  },
+  savePoseDraft: () => {
+    const s = get();
+    if (s.poseDraftFrame === null) return;
+    set({
+      poseErrors: commitDraft(s.poseErrors, s.poseDraftFrame, s.poseDraftLabels, s.poseDraftNote),
+      poseDirty: false,
+    });
+  },
+  revertPoseDraft: () => {
+    const s = get();
+    if (s.poseDraftFrame === null) return;
+    const committed = s.poseErrors[s.poseDraftFrame];
+    set({
+      poseDraftLabels: committed ? [...committed.labels] : [],
+      poseDraftNote: committed ? committed.note : '',
+      poseDirty: false,
+    });
+  },
+  clearPoseFrame: (frame) => {
+    const s = get();
+    const poseErrors = { ...s.poseErrors };
+    delete poseErrors[frame];
+    if (s.poseDraftFrame === frame) set({ poseErrors, poseDraftLabels: [], poseDraftNote: '', poseDirty: false });
+    else set({ poseErrors });
+  },
+  toggleSkeletonBackdrop: () => set({ skeletonBackdrop: !get().skeletonBackdrop }),
+  setHasSkeleton: (hasSkeleton) => set({ hasSkeleton }),
+
   toggleShortcuts: () => set({ showShortcuts: !get().showShortcuts }),
 
   loadProject: (project, meta) =>
     set({
       meta,
       reps: renumberReps(project.reps ?? []),
+      poseErrors: project.poseErrors ?? {},
+      poseDraftFrame: null,
+      poseDraftLabels: [],
+      poseDraftNote: '',
+      poseDirty: false,
       annotator: project.annotator ?? '',
       currentFrame: 0,
       inPoint: null,
@@ -252,6 +368,11 @@ export const useStore = create<AppState>((set, get) => ({
     set({
       meta,
       reps: [],
+      poseErrors: {},
+      poseDraftFrame: null,
+      poseDraftLabels: [],
+      poseDraftNote: '',
+      poseDirty: false,
       currentFrame: 0,
       inPoint: null,
       outPoint: null,

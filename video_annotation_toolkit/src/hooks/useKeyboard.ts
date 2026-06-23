@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from '../state/useStore';
 import { getEffectiveActions } from '../utils/actionStore';
+import { POSE_ERROR_LABELS } from '../config/poseErrors.config';
 
 /** Is the user currently typing into a form field? If so, stay out of their way. */
 function isEditingField(target: EventTarget | null): boolean {
@@ -38,6 +39,12 @@ export function useKeyboard() {
         s.toggleShortcuts();
         return;
       }
+      // explicit save works even while typing the error_note
+      if ((e.metaKey || e.ctrlKey) && e.code === 'KeyS') {
+        e.preventDefault();
+        s.savePoseDraft();
+        return;
+      }
       if (isEditingField(e.target)) return;
       if (!s.meta) return;
 
@@ -49,6 +56,10 @@ export function useKeyboard() {
       switch (e.code) {
         case 'Space':
           e.preventDefault();
+          // if a button has focus, Space would otherwise re-click it — take it for play/pause
+          if (document.activeElement instanceof HTMLElement && document.activeElement.tagName === 'BUTTON') {
+            document.activeElement.blur();
+          }
           s.togglePlay();
           return;
         case 'ArrowRight':
@@ -154,6 +165,17 @@ export function useKeyboard() {
         if (action) {
           e.preventDefault();
           s.setCurrentAction(action.id);
+        }
+        return;
+      }
+
+      // letter hotkeys toggle a pose-error label on the current frame (only with a skeleton)
+      if (s.hasSkeleton && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const k = e.key.toLowerCase();
+        const lbl = POSE_ERROR_LABELS.find((l) => l.hotkey === k);
+        if (lbl) {
+          e.preventDefault();
+          s.toggleDraftLabel(lbl.id);
         }
       }
     };

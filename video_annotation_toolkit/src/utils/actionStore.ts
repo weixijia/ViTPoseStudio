@@ -92,12 +92,20 @@ export async function importActionsFile(file: File): Promise<ActionsFile> {
   return parsed;
 }
 
-/** Merge imported actions into existing custom list (de-dup by id, skip built-ins). */
+/** Merge imported actions into existing custom list (de-dup by id, skip built-ins,
+ *  drop hotkeys that collide with a built-in or an already-claimed key). */
 export function mergeActions(existing: ActionTypeDef[], incoming: ActionTypeDef[]): ActionTypeDef[] {
   const byId = new Map(existing.map((a) => [a.id, a]));
   for (const a of incoming) {
     if (!a || !a.id || BUILTIN_IDS.has(a.id)) continue;
     byId.set(a.id, { ...a, custom: true });
   }
-  return [...byId.values()];
+  // resolve hotkey collisions: first claim wins, later duplicates lose their key
+  const claimed = new Set<string>(BUILTIN_HOTKEYS);
+  return [...byId.values()].map((a) => {
+    if (!a.hotkey) return a;
+    if (claimed.has(a.hotkey)) return { ...a, hotkey: undefined };
+    claimed.add(a.hotkey);
+    return a;
+  });
 }

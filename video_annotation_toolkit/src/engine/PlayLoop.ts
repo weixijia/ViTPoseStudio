@@ -1,4 +1,4 @@
-import { Input, ALL_FORMATS, BlobSource, CanvasSink } from 'mediabunny';
+import { Input, CanvasSink } from 'mediabunny';
 
 /**
  * Smooth forward playback via Mediabunny's *sequential* canvas iterator.
@@ -20,7 +20,7 @@ export class PlayLoop {
    * @param onEnd   called once when the clip end is reached (not on manual stop)
    */
   async run(
-    file: File,
+    makeInput: () => Input,
     startSec: number,
     speed: number,
     ctx: CanvasRenderingContext2D,
@@ -28,6 +28,7 @@ export class PlayLoop {
     dh: number,
     onFrame: (timeSec: number) => void,
     onEnd: () => void,
+    getClock: (() => number | null) | null = null,
   ): Promise<void> {
     this.stop();
     const token = ++this.runToken;
@@ -35,7 +36,7 @@ export class PlayLoop {
 
     let input: Input;
     try {
-      input = new Input({ formats: ALL_FORMATS, source: new BlobSource(file) });
+      input = makeInput();
     } catch {
       return;
     }
@@ -53,22 +54,35 @@ export class PlayLoop {
     try {
       for await (const wrapped of sink.canvases(startSec)) {
         if (this.stopped || token !== this.runToken) break;
-        const dueAt = wallStart + ((wrapped.timestamp - startSec) / speed) * 1000;
-        const lag = dueAt - performance.now();
-        if (lag > 2) {
-          await new Promise((r) => setTimeout(r, lag - 1));
-          if (this.stopped || token !== this.runToken) break;
+        const clk = getClock ? getClock() : null;
+        if (clk !== null && isFinite(clk)) {
+          // Audio is the master clock: wait until audio reaches this frame's time
+          // (but never block forever if audio stalls). When decode lags audio the
+          // condition is already false, so we draw immediately and catch up.
+          let guard = 0;
+          while (
+            !this.stopped &&
+            token === this.runToken &&
+            ((getClock!() ?? Infinity) < wrapped.timestamp - 0.006) &&
+            guard < 600
+          ) {
+            await new Promise((r) => setTimeout(r, 8));
+            guard++;
+          }
+        } else {
+          // No audio clock: pace to the wall clock; sleep only when AHEAD of
+          // schedule, never drop a frame (so the canvas always shows motion).
+          const dueAt = wallStart + ((wrapped.timestamp - startSec) / speed) * 1000;
+          const ahead = dueAt - performance.now();
+          if (ahead > 4) await new Promise((r) => setTimeout(r, ahead));
         }
-        // if we're way behind, skip drawing this frame but still advance the playhead
-        if (performance.now() > dueAt + 60) {
-          if (++n % 4 === 0) onFrame(wrapped.timestamp);
-          continue;
-        }
+        if (this.stopped || token !== this.runToken) break;
         ctx.drawImage(wrapped.canvas as CanvasImageSource, 0, 0, dw, dh);
-        if (++n % 4 === 0) onFrame(wrapped.timestamp);
+        if (++n % 2 === 0) onFrame(wrapped.timestamp);
       }
-    } catch {
-      /* decode/iterator errors end playback quietly */
+    } catch (err) {
+      // decode/iterator errors end playback; surface for debugging (onEnd still fires below)
+      console.warn('[PlayLoop] playback stopped on decode error:', err);
     }
 
     const reachedEnd = !this.stopped && token === this.runToken;

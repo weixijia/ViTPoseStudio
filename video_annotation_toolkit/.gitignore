@@ -4,8 +4,9 @@ dist/
 *.tsbuildinfo
 .vite/
 
-# local video data (large media — keep out of git)
+# local video data + generated skeletons (large; produced per-machine)
 videos/
+mediapipe_skeleton/
 
 # OMC state
 .omc/

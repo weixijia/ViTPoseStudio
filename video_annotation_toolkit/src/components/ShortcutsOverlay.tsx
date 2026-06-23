@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useStore } from '../state/useStore';
 
 const SECTIONS: { title: string; rows: [string, string][] }[] = [
@@ -31,6 +32,14 @@ const SECTIONS: { title: string; rows: [string, string][] }[] = [
     ],
   },
   {
+    title: 'Pose review (with skeleton)',
+    rows: [
+      ['Q / W / E', 'Toggle: tracking error / occlusion / drift'],
+      ['R / T / Y', 'Toggle: non-human / out-of-frame / wrong-person'],
+      ['Ctrl/Cmd + S', 'Save the current frame’s pose flag'],
+    ],
+  },
+  {
     title: 'Timeline',
     rows: [
       ['[ / ]', 'Zoom out / in'],
@@ -45,13 +54,29 @@ const SECTIONS: { title: string; rows: [string, string][] }[] = [
 export default function ShortcutsOverlay() {
   const show = useStore((s) => s.showShortcuts);
   const toggle = useStore((s) => s.toggleShortcuts);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  // move focus into the dialog when it opens; restore it when it closes
+  useEffect(() => {
+    if (!show) return;
+    const prev = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    return () => prev?.focus?.();
+  }, [show]);
+
   if (!show) return null;
   return (
     <div className="shortcuts-overlay" onClick={toggle}>
-      <div className="shortcuts-card" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="shortcuts-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Keyboard shortcuts"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="shortcuts-head">
           <h2>Keyboard shortcuts</h2>
-          <button onClick={toggle} title="Close (Esc)">×</button>
+          <button ref={closeRef} onClick={toggle} aria-label="Close shortcuts" title="Close (Esc)">×</button>
         </div>
         <div className="shortcuts-grid">
           {SECTIONS.map((sec) => (
