@@ -1,7 +1,0 @@
-{
-  "_comment": "Copy this to action_labels/<your-video-basename>.json and edit. The app loads it by matching the video file name. `id` is written to the CSV (keep it stable); `hotkey` is an optional 1-9.",
-  "actions": [
-    { "id": "squat", "label": "Squat", "hotkey": "1" },
-    { "id": "pushup", "label": "Push-up", "hotkey": "2" }
-  ]
-}
