@@ -1,0 +1,31 @@
+{
+  "_comment": "Action vocabulary for palse_jam_ben_chips (Ben Chips — Hypertrophy, ~45 min, Class 6529815b-63bf-4409-aead-d308e15488d4). Built from the class segment list (84 segments, warmup ends 6:40, cooldown starts 39:20). `id` is written to the CSV (keep it stable); `hotkey` (1-9) is optional — reassign freely. `rest` is included for segment labeling.",
+  "actions": [
+    { "id": "walk_outs", "label": "Walk Outs", "hotkey": "1" },
+    { "id": "worlds_greatest_stretch", "label": "World's Greatest Stretch", "hotkey": "2" },
+    { "id": "squats", "label": "Squats", "hotkey": "3" },
+    { "id": "down_dog_to_up_dog", "label": "Down Dog To Up Dog", "hotkey": "4" },
+    { "id": "alternating_bw_side_lunge", "label": "Alternating BW Side Lunge", "hotkey": "5" },
+    { "id": "bw_pop_squat", "label": "BW Pop Squat", "hotkey": "6" },
+    { "id": "down_ups", "label": "Down Ups", "hotkey": "7" },
+    { "id": "db_stiff_leg_deadlift", "label": "DB Stiff Leg Deadlift", "hotkey": "8" },
+    { "id": "db_goblet_squat", "label": "DB Goblet Squat", "hotkey": "9" },
+    { "id": "bw_glute_bridge", "label": "BW Glute Bridge" },
+    { "id": "bw_alternating_jumping_lunge", "label": "BW Alternating Jumping Lunge" },
+    { "id": "double_bent_over_row", "label": "Double Bent Over Row" },
+    { "id": "floor_press", "label": "Floor Press" },
+    { "id": "push_up", "label": "Push Up" },
+    { "id": "db_good_mornings", "label": "DB Good Mornings" },
+    { "id": "db_narrow_stance_squat", "label": "DB Narrow Stance Squat" },
+    { "id": "renegade_row", "label": "Renegade Row" },
+    { "id": "push_press", "label": "Push Press" },
+    { "id": "v_sit_ups", "label": "V Sit Ups" },
+    { "id": "mountain_climbers_to_high_knees", "label": "Mountain Climbers To High Knees" },
+    { "id": "cat_cow", "label": "Cat Cow" },
+    { "id": "pigeon_pose_r", "label": "Pigeon Pose (R)" },
+    { "id": "pigeon_pose_l", "label": "Pigeon Pose (L)" },
+    { "id": "downward_facing_dog", "label": "Downward Facing Dog" },
+    { "id": "cobra_stretch", "label": "Cobra Stretch" },
+    { "id": "rest", "label": "Rest" }
+  ]
+}
