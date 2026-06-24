@@ -37,7 +37,6 @@ export interface ProjectState {
   durationSec: number;
   annotator: string;
   reps: Rep[];
-  customActions?: ActionTypeDef[];
   poseErrors?: Record<number, PoseError>;
   savedAt: string;
 }
@@ -48,10 +47,7 @@ export interface PoseError {
   note: string;
 }
 
-/** Persisted per-video custom action file (`<videobasename>_actions.json`). */
-export interface ActionsFile {
-  version: 1;
-  videoFilename: string;
+/** Per-video action labels file: `action_labels/<videobasename>.json` (hand-edited). */
+export interface ActionLabelsFile {
   actions: ActionTypeDef[];
-  savedAt: string;
 }

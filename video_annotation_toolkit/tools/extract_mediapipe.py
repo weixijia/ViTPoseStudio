@@ -31,8 +31,28 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)  # the video_annotation_toolkit dir
 VIDEOS_DIR = os.path.join(ROOT, "videos")
 OUT_DIR = os.path.join(ROOT, "mediapipe_skeleton")
+ACTION_DIR = os.path.join(ROOT, "action_labels")
 
 VIDEO_EXTS = {".mp4", ".m4v", ".mov", ".avi", ".webm", ".mkv"}
+
+# starter labels written to action_labels/<base>.json (only if absent) — edit by hand afterward
+DEFAULT_ACTION_LABELS = {
+    "actions": [
+        {"id": "squat", "label": "Squat", "hotkey": "1"},
+        {"id": "pushup", "label": "Push-up", "hotkey": "2"},
+    ]
+}
+
+
+def scaffold_action_labels(base):
+    """Create action_labels/<base>.json with starter labels if it doesn't exist yet."""
+    os.makedirs(ACTION_DIR, exist_ok=True)
+    path = os.path.join(ACTION_DIR, base + ".json")
+    if os.path.exists(path):
+        return
+    with open(path, "w") as f:
+        json.dump(DEFAULT_ACTION_LABELS, f, indent=2)
+    print(f"  ↳ action labels stub: {path}  (edit to set this video's labels)")
 
 
 def find_videos(args_paths):
@@ -138,6 +158,7 @@ def main():
     for video_path in videos:
         name = os.path.basename(video_path)
         base = os.path.splitext(name)[0]
+        scaffold_action_labels(base)  # create a starter action_labels/<base>.json if missing
         out_path = os.path.join(OUT_DIR, base + ".json")
         if os.path.exists(out_path) and not args.force and not args.max_frames:
             print(f"• {name}: skeleton exists, skipping (use --force to redo)")

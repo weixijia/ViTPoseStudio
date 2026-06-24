@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import type { Rep, VideoMeta, ProjectState, ActionTypeDef, PoseError } from '../types';
 import { ACTION_TYPES } from '../config/actions.config';
-import { saveCustomActions } from '../utils/actionStore';
 
 let repCounter = 0;
 function newId(): string {
@@ -37,7 +36,7 @@ interface AppState {
   pendingNotes: string;
   selectedRepId: string | null;
   annotator: string;
-  customActions: ActionTypeDef[];
+  actionTypes: ActionTypeDef[]; // effective label list for the current video (from action_labels/<name>.json or defaults)
 
   // ---- pose-quality review (MediaPipe skeleton) ----
   poseErrors: Record<number, PoseError>; // committed (drives CSV, timeline, flagged list)
@@ -85,8 +84,7 @@ interface AppState {
   deleteRep: (id: string) => void;
 
   // ---- custom actions ----
-  setCustomActions: (list: ActionTypeDef[]) => void;
-  addCustomAction: (def: ActionTypeDef) => void;
+  setActionTypes: (list: ActionTypeDef[]) => void;
 
   // ---- pose-quality actions (draft → Save) ----
   beginPoseDraft: (frame: number) => void;
@@ -158,7 +156,7 @@ export const useStore = create<AppState>((set, get) => ({
   pendingNotes: '',
   selectedRepId: null,
   annotator: '',
-  customActions: [],
+  actionTypes: ACTION_TYPES,
 
   poseErrors: {},
   poseDraftFrame: null,
@@ -279,12 +277,11 @@ export const useStore = create<AppState>((set, get) => ({
       selectedRepId: get().selectedRepId === id ? null : get().selectedRepId,
     }),
 
-  setCustomActions: (customActions) => set({ customActions }),
-  addCustomAction: (def) => {
-    const next = [...get().customActions, def];
-    set({ customActions: next, currentAction: def.id });
-    const name = get().meta?.name;
-    if (name) saveCustomActions(name, next);
+  setActionTypes: (actionTypes) => {
+    // keep the current selection valid against the new label set
+    const cur = get().currentAction;
+    const ok = actionTypes.some((a) => a.id === cur);
+    set({ actionTypes, currentAction: ok ? cur : actionTypes[0]?.id ?? '' });
   },
 
   beginPoseDraft: (frame) => {

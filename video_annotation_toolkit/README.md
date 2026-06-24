@@ -150,26 +150,30 @@ A custom editor-style timeline (think 剪映 / Final Cut):
 
 ---
 
-## Action types
+## Action types (per-video label files)
 
-The dropdown list lives in **`src/config/actions.config.ts`** — replace the placeholder entries with
-your real movement set:
+The action dropdown is driven by a **per-video JSON file you edit by hand** — not the GUI. For a video
+`coach.mp4`, the app loads `action_labels/coach.json` (matched by name) on open:
 
-```ts
-export const ACTION_TYPES: ActionTypeDef[] = [
-  { id: 'squat',  label: 'Squat',    hotkey: '1' },
-  { id: 'pushup', label: 'Push-up',  hotkey: '2' },
-  // …
-];
+```json
+{
+  "actions": [
+    { "id": "squat",  "label": "Squat",   "hotkey": "1" },
+    { "id": "pushup", "label": "Push-up", "hotkey": "2" }
+  ]
+}
 ```
 
 - `id` is the value written to the CSV (`action_type`) — keep it stable; it becomes an ML label.
-- `label` is shown in the UI. `hotkey` is an optional `1`–`9` quick-select.
+- `label` shows in the dropdown; `hotkey` is an optional `1`–`9` quick-select.
+- Edit the file and reload the video to change the label set. See `action_labels/_example.json`.
+- The preprocessing script (`tools/extract_mediapipe.py`) scaffolds a starter `action_labels/<name>.json`
+  for each video (only if absent), so you have a file to edit.
+- If a video has **no** `action_labels` file, the built-in defaults in `src/config/actions.config.ts`
+  are used as a fallback.
 
-**Custom actions, per video.** Click **＋** next to the dropdown to add an action on the fly. It
-immediately becomes selectable, and is **saved for that video by filename** (in `localStorage`) so it
-reappears when you reload the same file. You can also **⬇ Actions** / **📂 Actions** to export/import a
-portable `<videoname>_actions.json` (e.g. to share a label set with other annotators).
+So the three inputs all match by file name: `videos/<name>`, `mediapipe_skeleton/<base>.json`, and
+`action_labels/<base>.json`.
 
 ---
 
@@ -269,14 +273,17 @@ ffmpeg -i input.m4v -c:v libx264 -crf 18 -preset slow -c:a aac input_h264.mp4
 ```
 video_annotation_toolkit/
   src/
-    engine/        VideoEngine + frame index (Mediabunny + WebCodecs), PlayLoop (smooth playback)
-    state/         zustand store (reps, playback, zoom, custom actions)
+    engine/        VideoEngine + frame index, PlayLoop, AudioPlayer, skeleton (Mediabunny + WebCodecs)
+    state/         zustand store (reps, pose errors, playback, zoom, action types)
     hooks/         playback loop, keyboard shortcuts
-    components/    VideoCanvas, TransportControls, Timeline, AnnotationPanel, RepTable,
-                   ExportBar, ShortcutsOverlay
-    config/        actions.config.ts  ← edit your action taxonomy here
-    utils/         csv, time, ruler, actionStore (custom-action persistence)
-  videos/          put source videos here (sample: instructor1.m4v)
+    components/    VideoCanvas, SkeletonCanvas, TransportControls, Timeline, AnnotationPanel,
+                   PoseErrorPanel, RepTable, ExportBar, ShortcutsOverlay
+    config/        actions.config.ts (default labels), poseErrors.config.ts
+    utils/         csv, time, ruler, actionStore (loads per-video action_labels)
+  videos/             put source videos here (sample: instructor1.m4v)        [git-ignored]
+  mediapipe_skeleton/ pre-extracted skeletons + manifest.json                 [git-ignored]
+  action_labels/      per-video label files <name>.json (edit by hand)        [git-ignored]
+  tools/              extract_mediapipe.py preprocessing
 ```
 
 ---
@@ -288,8 +295,8 @@ video_annotation_toolkit/
 | "Browser not supported" full-screen notice | Open in Chrome or Edge (WebCodecs required). |
 | "This video cannot be decoded…" | Codec not hardware-decodable on this machine (usually HEVC on Linux). Transcode to H.264 (above). |
 | Video loads but won't play | Make sure you're on the latest Chrome/Edge; check the browser console. |
-| Thumbnails say "generating…" for a while | Long clips take a moment to sample; annotation still works meanwhile. |
-| Custom action disappeared | It's stored per video filename in `localStorage`; clearing site data or renaming the file resets it. Use **⬇ Actions** to keep a portable copy. |
+| Dropdown shows default actions, not mine | Add/edit `action_labels/<video-basename>.json` and reload the video. |
+| Skeleton looks misaligned (warning banner) | Skeleton frame count ≠ video; re-run `extract_mediapipe.py`, ideally on a CFR re-encode. |
 
 ---
 

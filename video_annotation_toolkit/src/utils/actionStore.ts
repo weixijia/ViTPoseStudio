@@ -1,111 +1,45 @@
-import type { ActionTypeDef, ActionsFile } from '../types';
+import type { ActionTypeDef } from '../types';
 import { ACTION_TYPES } from '../config/actions.config';
-import { downloadText, baseName } from './csv';
-
-const LS_PREFIX = 'repannotator.actions.v1::';
-
-/** localStorage key for a given video filename. */
-function lsKey(videoName: string): string {
-  return LS_PREFIX + videoName;
-}
-
-/** Built-in action ids (cannot be shadowed by custom ones). */
-const BUILTIN_IDS = new Set(ACTION_TYPES.map((a) => a.id));
-const BUILTIN_HOTKEYS = new Set(ACTION_TYPES.map((a) => a.hotkey).filter(Boolean) as string[]);
-
-/** Load custom actions saved for this video (auto-restore on reload of same file). */
-export function loadCustomActions(videoName: string): ActionTypeDef[] {
-  try {
-    const raw = localStorage.getItem(lsKey(videoName));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as ActionTypeDef[];
-    return Array.isArray(parsed) ? parsed.filter((a) => a && a.id) : [];
-  } catch {
-    return [];
-  }
-}
-
-/** Persist this video's custom actions. */
-export function saveCustomActions(videoName: string, actions: ActionTypeDef[]) {
-  try {
-    localStorage.setItem(lsKey(videoName), JSON.stringify(actions));
-  } catch {
-    /* localStorage may be unavailable / full — non-fatal */
-  }
-}
 
 /**
- * Effective dropdown list: built-ins first (config order), then custom actions
- * sorted by label, de-duped by id (built-in wins).
+ * Per-video action labels live in a hand-edited file: `action_labels/<videobasename>.json`.
+ * The app fetches it on load (matched to the video name) and uses it to populate the action
+ * dropdown — so you maintain the label taxonomy in the JSON file, not in the GUI.
+ *
+ * Accepted shapes:
+ *   { "actions": [ { "id": "squat", "label": "Squat", "hotkey": "1" }, ... ] }
+ *   or a bare array of the same objects.
+ * `id` is what's written to the CSV (keep it stable). `hotkey` is an optional "1"–"9".
  */
-export function getEffectiveActions(custom: ActionTypeDef[]): ActionTypeDef[] {
-  const extra = custom
-    .filter((a) => !BUILTIN_IDS.has(a.id))
-    .slice()
-    .sort((a, b) => a.label.localeCompare(b.label));
-  return [...ACTION_TYPES, ...extra];
-}
+export async function loadActionLabels(videoBase: string): Promise<ActionTypeDef[] | null> {
+  try {
+    const res = await fetch(`/action_labels/${encodeURIComponent(videoBase)}.json`);
+    if (!res.ok) return null;
+    const raw = await res.json();
+    const arr = Array.isArray(raw) ? raw : raw?.actions;
+    if (!Array.isArray(arr)) return null;
 
-export interface ValidationResult {
-  ok: boolean;
-  error?: string;
-  normalized?: ActionTypeDef;
-}
-
-/** Validate & normalize a new custom action id. */
-export function validateNewAction(
-  rawId: string,
-  rawLabel: string,
-  rawHotkey: string,
-  custom: ActionTypeDef[],
-): ValidationResult {
-  const id = rawId.trim().toLowerCase().replace(/\s+/g, '_');
-  if (!id) return { ok: false, error: 'Enter an id.' };
-  if (!/^[a-z0-9_]+$/.test(id)) return { ok: false, error: 'Use lowercase letters, digits, _ only.' };
-  if (BUILTIN_IDS.has(id)) return { ok: false, error: `"${id}" is a built-in action.` };
-  if (custom.some((a) => a.id === id)) return { ok: false, error: `"${id}" already exists.` };
-  // a custom hotkey that collides with a built-in or existing custom is dropped
-  let hotkey: string | undefined = rawHotkey.trim().slice(0, 1);
-  if (hotkey && (!/^[1-9]$/.test(hotkey) || BUILTIN_HOTKEYS.has(hotkey) || custom.some((a) => a.hotkey === hotkey))) {
-    hotkey = undefined;
+    const seenId = new Set<string>();
+    const claimedKey = new Set<string>();
+    const out: ActionTypeDef[] = [];
+    for (const a of arr) {
+      if (!a || typeof a.id !== 'string') continue;
+      const id = a.id.trim();
+      if (!id || seenId.has(id)) continue;
+      seenId.add(id);
+      let hotkey: string | undefined =
+        typeof a.hotkey === 'string' ? a.hotkey.trim().slice(0, 1) : undefined;
+      if (hotkey && (!/^[1-9]$/.test(hotkey) || claimedKey.has(hotkey))) hotkey = undefined;
+      else if (hotkey) claimedKey.add(hotkey);
+      out.push({ id, label: String(a.label ?? id), hotkey });
+    }
+    return out.length ? out : null;
+  } catch {
+    return null;
   }
-  const label = rawLabel.trim() || id;
-  return { ok: true, normalized: { id, label, hotkey, custom: true } };
 }
 
-/** Download `<videobasename>_actions.json`. */
-export function exportActionsFile(videoName: string, actions: ActionTypeDef[]) {
-  const file: ActionsFile = {
-    version: 1,
-    videoFilename: videoName,
-    actions,
-    savedAt: new Date().toISOString(),
-  };
-  downloadText(`${baseName(videoName)}_actions.json`, JSON.stringify(file, null, 2), 'application/json');
-}
-
-/** Parse an imported actions file, returning its custom actions. */
-export async function importActionsFile(file: File): Promise<ActionsFile> {
-  const text = await file.text();
-  const parsed = JSON.parse(text) as ActionsFile;
-  if (!Array.isArray(parsed.actions)) throw new Error('Invalid actions file: missing "actions" array.');
-  return parsed;
-}
-
-/** Merge imported actions into existing custom list (de-dup by id, skip built-ins,
- *  drop hotkeys that collide with a built-in or an already-claimed key). */
-export function mergeActions(existing: ActionTypeDef[], incoming: ActionTypeDef[]): ActionTypeDef[] {
-  const byId = new Map(existing.map((a) => [a.id, a]));
-  for (const a of incoming) {
-    if (!a || !a.id || BUILTIN_IDS.has(a.id)) continue;
-    byId.set(a.id, { ...a, custom: true });
-  }
-  // resolve hotkey collisions: first claim wins, later duplicates lose their key
-  const claimed = new Set<string>(BUILTIN_HOTKEYS);
-  return [...byId.values()].map((a) => {
-    if (!a.hotkey) return a;
-    if (claimed.has(a.hotkey)) return { ...a, hotkey: undefined };
-    claimed.add(a.hotkey);
-    return a;
-  });
+/** Effective action list: the per-video file, or the built-in defaults when none exists. */
+export function getEffectiveActions(loaded: ActionTypeDef[] | null): ActionTypeDef[] {
+  return loaded && loaded.length ? loaded : ACTION_TYPES;
 }

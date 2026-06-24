@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
 import { useStore } from '../state/useStore';
 
 const SECTIONS: { title: string; rows: [string, string][] }[] = [
@@ -76,7 +77,7 @@ export default function ShortcutsOverlay() {
       >
         <div className="shortcuts-head">
           <h2>Keyboard shortcuts</h2>
-          <button ref={closeRef} onClick={toggle} aria-label="Close shortcuts" title="Close (Esc)">×</button>
+          <button ref={closeRef} onClick={toggle} aria-label="Close shortcuts" title="Close (Esc)"><X size={18} /></button>
         </div>
         <div className="shortcuts-grid">
           {SECTIONS.map((sec) => (

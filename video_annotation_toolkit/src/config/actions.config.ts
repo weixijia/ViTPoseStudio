@@ -1,16 +1,14 @@
 /**
- * ★ ACTION TAXONOMY — EDIT THIS LIST FOR YOUR PROJECT ★
+ * DEFAULT action taxonomy — used only when a video has NO `action_labels/<name>.json`.
  *
- * Each entry is one exercise / action type an annotator can assign to a rep.
+ * Per-video labels are normally maintained in `action_labels/<videobasename>.json`
+ * (hand-edited, loaded automatically by file-name match). This list is the fallback
+ * when that file is missing.
+ *
  *  - id:     stable machine-readable key written to the CSV (`action_type`). Keep it
- *            short, lowercase, no spaces — this becomes an ML label, so consistency matters.
+ *            short, lowercase, no spaces — this becomes an ML label.
  *  - label:  human-readable name shown in the UI dropdown.
  *  - hotkey: optional single key ("1"-"9") to select this action instantly.
- *
- * Annotators can still type an ad-hoc action not in this list (see AnnotationPanel),
- * but predefining them here keeps labels consistent across your dataset.
- *
- * The list below is placeholder content — replace it with your real movement set.
  */
 import type { ActionTypeDef } from '../types';
 

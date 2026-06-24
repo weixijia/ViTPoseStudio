@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { ZoomIn, ZoomOut } from 'lucide-react';
 import { useStore } from '../state/useStore';
 import { engine } from '../engine/engineInstance';
 import { rulerStep, formatRulerLabel, snapTime } from '../utils/ruler';
@@ -494,7 +495,7 @@ export default function Timeline() {
     <div className="timeline">
       <div className="timeline-toolbar">
         <span className="tl-label">Zoom</span>
-        <button aria-label="Zoom out" title="Zoom out  ( [ )" disabled={atMinZoom} onClick={() => zoomBy(1 / 1.5)}>－</button>
+        <button aria-label="Zoom out" title="Zoom out  ( [ )" disabled={atMinZoom} onClick={() => zoomBy(1 / 1.5)}><ZoomOut size={15} /></button>
         <input
           className="zoom-slider"
           type="range"
@@ -505,7 +506,7 @@ export default function Timeline() {
           onChange={(e) => onSlider(Number(e.target.value))}
           title="Drag to zoom the timeline in/out"
         />
-        <button aria-label="Zoom in" title="Zoom in  ( ] )" disabled={atMaxZoom} onClick={() => zoomBy(1.5)}>＋</button>
+        <button aria-label="Zoom in" title="Zoom in  ( ] )" disabled={atMaxZoom} onClick={() => zoomBy(1.5)}><ZoomIn size={15} /></button>
         <button title="Zoom out so the whole video fits in view  (Shift+Z)" onClick={() => useStore.getState().zoomToFit()}>Fit all</button>
         <span className="tl-divider" />
         <button

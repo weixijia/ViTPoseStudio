@@ -1,3 +1,4 @@
+import { SkipBack, SkipForward, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useStore } from '../state/useStore';
 import { engine } from '../engine/engineInstance';
 import { formatTimecode } from '../utils/time';
@@ -30,15 +31,15 @@ export default function TransportControls() {
   return (
     <div className="transport">
       <div className="transport-group">
-        <button aria-label="First frame" title="First frame (Home)" onClick={() => goto(0)}>⏮</button>
+        <button aria-label="First frame" title="First frame (Home)" onClick={() => goto(0)}><SkipBack size={16} /></button>
         <button className="frame-btn" aria-label="Back 10 frames" title="Back 10 frames (Shift+←)" onClick={() => step(-10)}>−10f</button>
-        <button className="frame-btn" aria-label="Previous frame" title="Previous frame (←)" onClick={() => step(-1)}>◀ 1f</button>
+        <button className="frame-btn" aria-label="Previous frame" title="Previous frame (←)" onClick={() => step(-1)}>−1f</button>
         <button className="play" aria-label={isPlaying ? 'Pause' : 'Play'} aria-pressed={isPlaying} title="Play / Pause (Space)" onClick={togglePlay}>
-          {isPlaying ? '❙❙' : '▶'}
+          {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
         </button>
-        <button className="frame-btn" aria-label="Next frame" title="Next frame (→)" onClick={() => step(1)}>1f ▶</button>
+        <button className="frame-btn" aria-label="Next frame" title="Next frame (→)" onClick={() => step(1)}>+1f</button>
         <button className="frame-btn" aria-label="Forward 10 frames" title="Forward 10 frames (Shift+→)" onClick={() => step(10)}>+10f</button>
-        <button aria-label="Last frame" title="Last frame (End)" onClick={() => goto(meta.frameCount - 1)}>⏭</button>
+        <button aria-label="Last frame" title="Last frame (End)" onClick={() => goto(meta.frameCount - 1)}><SkipForward size={16} /></button>
       </div>
 
       <div className="transport-readout">
@@ -50,7 +51,7 @@ export default function TransportControls() {
 
       <div className="transport-group speed-group">
         <button className="mute-btn" aria-label={muted ? 'Unmute audio' : 'Mute audio'} aria-pressed={muted} title={muted ? 'Unmute' : 'Mute'} onClick={toggleMuted}>
-          {muted ? '🔇' : '🔊'}
+          {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
         </button>
         <label>Speed</label>
         {[0.25, 0.5, 1, 2, 4].map((sp) => (

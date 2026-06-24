@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { X, Save } from 'lucide-react';
 import { useStore } from '../state/useStore';
 import { engine } from '../engine/engineInstance';
 import { POSE_ERROR_LABELS } from '../config/poseErrors.config';
@@ -83,7 +84,7 @@ export default function PoseErrorPanel() {
 
           <div className="save-row">
             <button className="save-btn" disabled={!dirty} onClick={savePoseDraft} title="Save this frame's flag (Ctrl/Cmd+S)">
-              💾 Save frame
+              <Save size={14} /> Save frame
             </button>
             {dirty ? (
               <span className="save-status unsaved">● Unsaved changes</span>
@@ -109,7 +110,7 @@ export default function PoseErrorPanel() {
                     <span className="flagged-labels" title={pe.labels.map(labelName).join(', ')}>
                       {pe.labels.map(labelName).join(', ') || (pe.note ? '(note)' : '')}
                     </span>
-                    <button className="danger" aria-label={`Clear flag on frame ${f}`} title="Clear" onClick={() => clearPoseFrame(f)}>✕</button>
+                    <button className="danger" aria-label={`Clear flag on frame ${f}`} title="Clear" onClick={() => clearPoseFrame(f)}><X size={13} /></button>
                   </div>
                 );
               })}

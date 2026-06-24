@@ -8,6 +8,10 @@ dist/
 videos/
 mediapipe_skeleton/
 
+# per-video action labels (project data); keep the committed example template
+action_labels/*
+!action_labels/_example.json
+
 # OMC state
 .omc/
 

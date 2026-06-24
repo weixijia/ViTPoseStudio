@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
 import { useStore } from '../state/useStore';
 import { formatClock } from '../utils/time';
 
@@ -86,7 +87,7 @@ export default function RepTable() {
                         aria-label={`Delete rep ${r.repIndex}`}
                         title="Delete rep (Del). Adjust edges by dragging on the timeline, or Shift+I / Shift+O."
                         onClick={(e) => { e.stopPropagation(); deleteRep(r.id); }}
-                      >✕</button>
+                      ><X size={13} /></button>
                     </td>
                   </tr>
                 );

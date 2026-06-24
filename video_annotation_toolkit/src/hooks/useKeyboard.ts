@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useStore } from '../state/useStore';
-import { getEffectiveActions } from '../utils/actionStore';
 import { POSE_ERROR_LABELS } from '../config/poseErrors.config';
 
 /** Is the user currently typing into a form field? If so, stay out of their way. */
@@ -161,7 +160,7 @@ export function useKeyboard() {
       // digit hotkeys select an action type (built-in or custom)
       if (/^Digit[1-9]$/.test(e.code)) {
         const key = e.code.slice(5);
-        const action = getEffectiveActions(s.customActions).find((a) => a.hotkey === key);
+        const action = s.actionTypes.find((a) => a.hotkey === key);
         if (action) {
           e.preventDefault();
           s.setCurrentAction(action.id);

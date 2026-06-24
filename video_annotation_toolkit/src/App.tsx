@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import { HelpCircle, X } from 'lucide-react';
 import { engine } from './engine/engineInstance';
 import type { VideoSourceInput } from './engine/VideoEngine';
 import { audioPlayer } from './engine/AudioPlayer';
 import { skeleton } from './engine/skeleton';
 import { useStore, registerEngineTimeLookup } from './state/useStore';
-import { loadCustomActions } from './utils/actionStore';
+import { loadActionLabels, getEffectiveActions } from './utils/actionStore';
 import { usePlayback } from './hooks/usePlayback';
 import { useKeyboard } from './hooks/useKeyboard';
 import VideoCanvas from './components/VideoCanvas';
@@ -16,6 +17,7 @@ import PoseErrorPanel from './components/PoseErrorPanel';
 import RepTable from './components/RepTable';
 import ExportBar from './components/ExportBar';
 import ShortcutsOverlay from './components/ShortcutsOverlay';
+import Tutorial from './components/Tutorial';
 
 const WEBCODECS_OK = typeof window !== 'undefined' && 'VideoDecoder' in window;
 
@@ -32,7 +34,7 @@ export default function App() {
   const annotator = useStore((s) => s.annotator);
   const setAnnotator = useStore((s) => s.setAnnotator);
   const resetForNewVideo = useStore((s) => s.resetForNewVideo);
-  const setCustomActions = useStore((s) => s.setCustomActions);
+  const setActionTypes = useStore((s) => s.setActionTypes);
   const setHasSkeleton = useStore((s) => s.setHasSkeleton);
   const toggleShortcuts = useStore((s) => s.toggleShortcuts);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
@@ -61,9 +63,10 @@ export default function App() {
         registerEngineTimeLookup((frame) => engine.timeOfFrame(frame));
         if (engine.mediaUrl) audioPlayer.load(engine.mediaUrl);
         resetForNewVideo(m);
-        setCustomActions(loadCustomActions(m.name));
-        // frame-aligned MediaPipe skeleton (optional)
         const base = m.name.replace(/\.[^./\\]+$/, '');
+        // per-video action labels: action_labels/<base>.json (falls back to built-in defaults)
+        setActionTypes(getEffectiveActions(await loadActionLabels(base)));
+        // frame-aligned MediaPipe skeleton (optional)
         const url = skeletonUrl ?? `/mediapipe_skeleton/${base}.json`;
         const sk = await skeleton.loadFromUrl(url);
         setHasSkeleton(!!sk);
@@ -83,7 +86,7 @@ export default function App() {
         setStatus('error');
       }
     },
-    [resetForNewVideo, setCustomActions, setHasSkeleton],
+    [resetForNewVideo, setActionTypes, setHasSkeleton],
   );
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,62 +135,64 @@ export default function App() {
           />
         )}
         {meta && <ExportBar />}
-        <button className="help-btn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)" onClick={toggleShortcuts}>?</button>
+        <button className="help-btn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)" onClick={toggleShortcuts}><HelpCircle size={18} /></button>
       </header>
 
       {skeletonWarning && (
         <div className="warn-banner" role="status">
-          ⚠ {skeletonWarning}
-          <button aria-label="Dismiss warning" onClick={() => setSkeletonWarning('')}>×</button>
+          <span>⚠ {skeletonWarning}</span>
+          <button aria-label="Dismiss warning" onClick={() => setSkeletonWarning('')}><X size={14} /></button>
         </div>
       )}
 
       {!meta ? (
-        <div
-          className={`dropzone ${dragOver ? 'over' : ''}`}
-          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={onDrop}
-        >
-          {status === 'loading' ? (
-            <div className="loading-box"><div className="spinner" /><p>Decoding &amp; indexing frames…</p></div>
-          ) : status === 'error' ? (
-            <div className="error-box">
-              <h3>Could not load video</h3>
-              <p>{errorMsg}</p>
-              <label className="load-btn">Try another file<input type="file" accept="video/*" onChange={onPick} hidden /></label>
-            </div>
-          ) : (
-            <>
-              <div className="dropzone-logo">◉</div>
-              <h1>Drop a video to start</h1>
-              <p>
-                Frame-accurate annotation for fitness rep counting. Everything runs locally —
-                your video never leaves this machine.
-              </p>
-              <label className="load-btn big">
-                Choose video file
-                <input type="file" accept="video/*,.m4v,.mp4,.webm,.mov" onChange={onPick} hidden />
-              </label>
+        <div className="welcome">
+          <div
+            className={`welcome-left dropzone ${dragOver ? 'over' : ''}`}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={onDrop}
+          >
+            {status === 'loading' ? (
+              <div className="loading-box"><div className="spinner" /><p>Decoding &amp; indexing frames…</p></div>
+            ) : status === 'error' ? (
+              <div className="error-box">
+                <h3>Could not load video</h3>
+                <p>{errorMsg}</p>
+                <label className="load-btn">Try another file<input type="file" accept="video/*" onChange={onPick} hidden /></label>
+              </div>
+            ) : (
+              <>
+                <div className="dropzone-logo">◉</div>
+                <h1>Select a video to annotate</h1>
+                <p>Drop a video here, or choose one below. Everything runs locally.</p>
+                <label className="load-btn big">
+                  Choose video file
+                  <input type="file" accept="video/*,.m4v,.mp4,.webm,.mov" onChange={onPick} hidden />
+                </label>
 
-              {manifest.length > 0 && (
-                <div className="manifest-list">
-                  <h3>Pre-processed videos <span className="manifest-sub">(with MediaPipe skeleton)</span></h3>
-                  {manifest.map((e) => (
-                    <button
-                      key={e.video}
-                      className="manifest-item"
-                      onClick={() => loadVideo({ url: `/videos/${e.video}`, name: e.video }, `/mediapipe_skeleton/${e.skeleton}`)}
-                    >
-                      <span className="mi-name">{e.video}</span>
-                      <span className="mi-meta">{e.frame_count ? `${e.frame_count} frames` : ''} · skeleton ✓</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <p className="dropzone-hint">Press <kbd>?</kbd> anytime for shortcuts · Chrome / Edge recommended</p>
-            </>
-          )}
+                {manifest.length > 0 && (
+                  <div className="manifest-list">
+                    <h3>Pre-processed videos <span className="manifest-sub">(with MediaPipe skeleton)</span></h3>
+                    {manifest.map((e) => (
+                      <button
+                        key={e.video}
+                        className="manifest-item"
+                        onClick={() => loadVideo({ url: `/videos/${e.video}`, name: e.video }, `/mediapipe_skeleton/${e.skeleton}`)}
+                      >
+                        <span className="mi-name">{e.video}</span>
+                        <span className="mi-meta">{e.frame_count ? `${e.frame_count} frames` : ''} · skeleton ✓</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="dropzone-hint">Chrome / Edge recommended</p>
+              </>
+            )}
+          </div>
+          <aside className="welcome-right">
+            <Tutorial />
+          </aside>
         </div>
       ) : (
         <div className="workspace">
