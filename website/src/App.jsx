@@ -197,20 +197,17 @@ function Citation() {
             </div>
           </div>
 
-            <div>
+          <div>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              {t.citation.subtitleVitpose} <a href="https://github.com/ViTAE-Transformer/ViTPose" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>ViTAE-Transformer/ViTPose</a>
+              {t.citation.subtitleSapiens} <a href="https://github.com/facebookresearch/sapiens2" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>facebookresearch/sapiens2</a>
             </p>
             <div className="bibtex-code">
               <code>
-{`@article{xu2023ViTPose++,
-  title={ViTPose++: Vision Transformer Foundation Model for Generic Body Pose Estimation},
-  author={Xu, Yufei and Zhang, Jing and Zhang, Qiming and Tao, Dacheng},
-  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
-  year={2024},
-  volume={46},
-  pages={1212-1230},
-  doi={10.1109/TPAMI.2023.3330016}
+{`@article{khirodkarsapiens2,
+  title={Sapiens2: Foundation for Human Vision Models},
+  author={Khirodkar, Rawal and Bagautdinov, Timur and Martinez, Julieta and Zhao, Su and James, Stephen and Selednik, Peter and Anderson, Stuart and Saito, Shunsuke},
+  journal={arXiv preprint arXiv:2604.21681},
+  year={2026}
 }`}
               </code>
             </div>
@@ -218,17 +215,33 @@ function Citation() {
 
           <div>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', marginTop: '40px' }}>
-              {t.citation.subtitleYolo} <a href="https://github.com/ultralytics/ultralytics" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Ultralytics/YOLO26</a>
+              {t.citation.subtitlePose2Sim} <a href="https://github.com/perfanalytics/pose2sim" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>perfanalytics/Pose2Sim</a>
             </p>
             <div className="bibtex-code">
               <code>
-{`@software{yolo26_ultralytics,
+{`@Article{Pagnon_2022_JOSS,
+  AUTHOR = {Pagnon, David and Domalain, Mathieu and Reveret, Lionel},
+  TITLE = {Pose2Sim: An open-source Python package for multiview markerless kinematics},
+  JOURNAL = {Journal of Open Source Software},
+  YEAR = {2022},
+  DOI = {10.21105/joss.04362},
+  URL = {https://joss.theoj.org/papers/10.21105/joss.04362}
+}`}
+              </code>
+            </div>
+          </div>
+
+          <div>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', marginTop: '40px' }}>
+              {t.citation.subtitleYolo} <a href="https://github.com/ultralytics/ultralytics" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Ultralytics/YOLO</a>
+            </p>
+            <div className="bibtex-code">
+              <code>
+{`@software{yolo_ultralytics,
   author = {Glenn Jocher and Jing Qiu},
-  title = {Ultralytics YOLO26},
-  version = {26.0.0},
+  title = {Ultralytics YOLO},
   year = {2026},
   url = {https://github.com/ultralytics/ultralytics},
-  orcid = {0000-0001-5950-6979, 0000-0003-3783-7069},
   license = {AGPL-3.0}
 }`}
               </code>

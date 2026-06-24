@@ -7,8 +7,6 @@ import threading
 import subprocess
 import csv
 import platform
-import shutil
-import urllib.request
 import logging
 
 # Setup debug mode logging (Default to WARNING)
@@ -27,51 +25,214 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PySide6.QtCore import Qt, QThread, Signal, Slot, QTimer
 from PySide6.QtGui import QImage, QPixmap, QFont, QColor
 
-# pose_studio_engine is bundled locally in the standalone repository
-from pose_studio_engine import VitInference
+# pose frameworks are loaded in isolated worker processes.
+from pose_studio_engine.framework_process import IsolatedFrameworkModel
 
-class YOLOPoseWrapper:
-    def __init__(self, size="n", device="cpu"):
-        from ultralytics import YOLO
-        # We use yolov8 pose models internally
-        model_name = f"yolov8{size}-pose.pt"
-        logging.info(f"YOLOPoseWrapper loading {model_name} on device {device}")
-        self.model = YOLO(model_name)
-        self.model.to(device)
-        self.dataset = 'coco' # YOLO pose defaults to 17 keypoints
-        self._last_results = None
 
-    def inference(self, img_rgb):
-        # Ultralytics expects BGR numpy arrays. We receive RGB from CameraThread.
-        img_bgr = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
-        # Run inference with tracking to maintain person IDs
-        results = self.model.track(img_bgr, persist=True, verbose=False, device=self.model.device)
-        self._last_results = results[0]
-        
-        keypoints_dict = {}
-        if self._last_results.boxes and self._last_results.boxes.id is not None:
-            # boxes.id is a tensor of tracking IDs
-            ids = self._last_results.boxes.id.int().cpu().tolist()
-            if self._last_results.keypoints and self._last_results.keypoints.data is not None:
-                # keypoints.data is shape (num_persons, 17, 3) where [x, y, conf]
-                kpts_data = self._last_results.keypoints.data.cpu().numpy()
-                
-                for person_id, kpts in zip(ids, kpts_data):
-                    keypoints_dict[person_id] = kpts
-        return keypoints_dict
+MODEL_CATALOG = [
+    {
+        "label": "MMPose RTMPose-S Body+Feet 26",
+        "provider": "MMPose RTMLib",
+        "coverage": "Body+Feet",
+        "scale": "S",
+        "keypoints": 26,
+        "runtime": "ONNX Runtime CPU",
+        "spec": {"framework": "mmpose_rtmlib", "size": "lightweight", "pose_model": "body_with_feet", "tracking": False, "det_frequency": 1},
+    },
+    {
+        "label": "MMPose RTMPose-M Body+Feet 26",
+        "provider": "MMPose RTMLib",
+        "coverage": "Body+Feet",
+        "scale": "M",
+        "keypoints": 26,
+        "runtime": "ONNX Runtime CPU",
+        "spec": {"framework": "mmpose_rtmlib", "size": "balanced", "pose_model": "body_with_feet", "tracking": False, "det_frequency": 1},
+    },
+    {
+        "label": "MMPose RTMPose-X Body+Feet 26",
+        "provider": "MMPose RTMLib",
+        "coverage": "Body+Feet",
+        "scale": "X",
+        "keypoints": 26,
+        "runtime": "ONNX Runtime CPU",
+        "spec": {"framework": "mmpose_rtmlib", "size": "performance", "pose_model": "body_with_feet", "tracking": False, "det_frequency": 1},
+    },
+    {
+        "label": "MMPose RTMPose-S Body 17",
+        "provider": "MMPose RTMLib",
+        "coverage": "Body",
+        "scale": "S",
+        "keypoints": 17,
+        "runtime": "ONNX Runtime CPU",
+        "spec": {"framework": "mmpose_rtmlib", "size": "lightweight", "pose_model": "body", "tracking": False, "det_frequency": 1},
+    },
+    {
+        "label": "MMPose RTMPose-M Body 17",
+        "provider": "MMPose RTMLib",
+        "coverage": "Body",
+        "scale": "M",
+        "keypoints": 17,
+        "runtime": "ONNX Runtime CPU",
+        "spec": {"framework": "mmpose_rtmlib", "size": "balanced", "pose_model": "body", "tracking": False, "det_frequency": 1},
+    },
+    {
+        "label": "MMPose RTMPose-X Body 17",
+        "provider": "MMPose RTMLib",
+        "coverage": "Body",
+        "scale": "X",
+        "keypoints": 17,
+        "runtime": "ONNX Runtime CPU",
+        "spec": {"framework": "mmpose_rtmlib", "size": "performance", "pose_model": "body", "tracking": False, "det_frequency": 1},
+    },
+    {
+        "label": "MMPose RTMW-L/M Wholebody 133",
+        "provider": "MMPose RTMLib",
+        "coverage": "Body+Face+Hands",
+        "scale": "L/M",
+        "keypoints": 133,
+        "runtime": "ONNX Runtime CPU",
+        "spec": {"framework": "mmpose_rtmlib", "size": "lightweight", "pose_model": "whole_body", "tracking": False, "det_frequency": 1},
+    },
+    {
+        "label": "MMPose RTMW-X/L Wholebody 133",
+        "provider": "MMPose RTMLib",
+        "coverage": "Body+Face+Hands",
+        "scale": "X/L",
+        "keypoints": 133,
+        "runtime": "ONNX Runtime CPU",
+        "spec": {"framework": "mmpose_rtmlib", "size": "balanced", "pose_model": "whole_body", "tracking": False, "det_frequency": 1},
+    },
+    {
+        "label": "MMPose RTMW-X 384 Wholebody 133",
+        "provider": "MMPose RTMLib",
+        "coverage": "Body+Face+Hands",
+        "scale": "X 384",
+        "keypoints": 133,
+        "runtime": "ONNX Runtime CPU",
+        "spec": {"framework": "mmpose_rtmlib", "size": "performance", "pose_model": "whole_body", "tracking": False, "det_frequency": 1},
+    },
+    {
+        "label": "Sapiens2 0.4B Wholebody 308",
+        "provider": "Sapiens2",
+        "coverage": "Body+Face+Hands",
+        "scale": "0.4B",
+        "keypoints": 308,
+        "runtime": "MPS/CPU subprocess",
+        "spec": {"framework": "sapiens2", "size": "0.4b"},
+    },
+    {
+        "label": "Sapiens2 0.8B Wholebody 308",
+        "provider": "Sapiens2",
+        "coverage": "Body+Face+Hands",
+        "scale": "0.8B",
+        "keypoints": 308,
+        "runtime": "MPS/CPU subprocess",
+        "spec": {"framework": "sapiens2", "size": "0.8b"},
+    },
+    {
+        "label": "Sapiens2 1B Wholebody 308",
+        "provider": "Sapiens2",
+        "coverage": "Body+Face+Hands",
+        "scale": "1B",
+        "keypoints": 308,
+        "runtime": "MPS/CPU subprocess",
+        "spec": {"framework": "sapiens2", "size": "1b"},
+    },
+    {
+        "label": "Sapiens2 5B Wholebody 308",
+        "provider": "Sapiens2",
+        "coverage": "Body+Face+Hands",
+        "scale": "5B",
+        "keypoints": 308,
+        "runtime": "MPS/CPU subprocess",
+        "spec": {"framework": "sapiens2", "size": "5b"},
+    },
+    {
+        "label": "ViTPose-S Wholebody 133",
+        "provider": "ViTPose",
+        "coverage": "Body+Face+Hands",
+        "scale": "S",
+        "keypoints": 133,
+        "runtime": "PyTorch MPS/CPU",
+        "spec": {"framework": "vitpose", "size": "s"},
+    },
+    {
+        "label": "ViTPose-B Wholebody 133",
+        "provider": "ViTPose",
+        "coverage": "Body+Face+Hands",
+        "scale": "B",
+        "keypoints": 133,
+        "runtime": "PyTorch MPS/CPU",
+        "spec": {"framework": "vitpose", "size": "b"},
+    },
+    {
+        "label": "ViTPose-L Wholebody 133",
+        "provider": "ViTPose",
+        "coverage": "Body+Face+Hands",
+        "scale": "L",
+        "keypoints": 133,
+        "runtime": "PyTorch MPS/CPU",
+        "spec": {"framework": "vitpose", "size": "l"},
+    },
+    {
+        "label": "ViTPose-H Wholebody 133",
+        "provider": "ViTPose",
+        "coverage": "Body+Face+Hands",
+        "scale": "H",
+        "keypoints": 133,
+        "runtime": "PyTorch MPS/CPU",
+        "spec": {"framework": "vitpose", "size": "h"},
+    },
+    {
+        "label": "YOLOv8n Pose 17",
+        "provider": "YOLO",
+        "coverage": "Body",
+        "scale": "N",
+        "keypoints": 17,
+        "runtime": "PyTorch MPS/CPU",
+        "spec": {"framework": "yolo", "size": "n"},
+    },
+    {
+        "label": "YOLOv8s Pose 17",
+        "provider": "YOLO",
+        "coverage": "Body",
+        "scale": "S",
+        "keypoints": 17,
+        "runtime": "PyTorch MPS/CPU",
+        "spec": {"framework": "yolo", "size": "s"},
+    },
+    {
+        "label": "YOLOv8m Pose 17",
+        "provider": "YOLO",
+        "coverage": "Body",
+        "scale": "M",
+        "keypoints": 17,
+        "runtime": "PyTorch MPS/CPU",
+        "spec": {"framework": "yolo", "size": "m"},
+    },
+    {
+        "label": "YOLOv8l Pose 17",
+        "provider": "YOLO",
+        "coverage": "Body",
+        "scale": "L",
+        "keypoints": 17,
+        "runtime": "PyTorch MPS/CPU",
+        "spec": {"framework": "yolo", "size": "l"},
+    },
+    {
+        "label": "YOLOv8x Pose 17",
+        "provider": "YOLO",
+        "coverage": "Body",
+        "scale": "X",
+        "keypoints": 17,
+        "runtime": "PyTorch MPS/CPU",
+        "spec": {"framework": "yolo", "size": "x"},
+    },
+]
 
-    def draw(self, show_yolo=False, confidence_threshold=0.3, skeleton_thickness=2):
-        if self._last_results is None:
-            return np.zeros((480, 640, 3), dtype=np.uint8)
-        # ultralytics plot returns BGR image, we need RGB
-        plotted_bgr = self._last_results.plot(
-            boxes=show_yolo, 
-            kpt_line=True, 
-            labels=False, 
-            conf=confidence_threshold,
-            line_width=skeleton_thickness
-        )
-        return cv2.cvtColor(plotted_bgr, cv2.COLOR_BGR2RGB)
+FRAMEWORK_CHOICES = [(item["label"], item["spec"]) for item in MODEL_CATALOG]
+PROVIDER_FILTERS = ["All providers"] + sorted({item["provider"] for item in MODEL_CATALOG})
+COVERAGE_FILTERS = ["Any keypoints", "Body", "Body+Feet", "Body+Face+Hands"]
 
 class CameraThread(QThread):
     change_pixmap_signal = Signal(QImage, float)
@@ -163,6 +324,7 @@ class PoseStudioApp(QMainWindow):
         self.model = None
         self.latest_frame_bgr = None
         self.inference_fps = 0.0
+        self._updating_model_menu = False
         
         # Recording state
         self.is_recording = False
@@ -179,7 +341,7 @@ class PoseStudioApp(QMainWindow):
         self._setup_styles()
         
         # Setup background tasks
-        self.change_model("ViTPose - s (Small/Fast)")
+        self.change_model(0, allow_startup_fallback=True)
         
         # Open camera in main thread for macOS AVFoundation safety
         self.cap = cv2.VideoCapture(0)
@@ -207,7 +369,7 @@ class PoseStudioApp(QMainWindow):
         # Sidebar
         self.sidebar = QFrame()
         self.sidebar.setObjectName("sidebar")
-        self.sidebar.setFixedWidth(300)
+        self.sidebar.setFixedWidth(340)
         sidebar_layout = QVBoxLayout(self.sidebar)
         sidebar_layout.setContentsMargins(32, 40, 32, 40)
         sidebar_layout.setSpacing(24)
@@ -232,25 +394,47 @@ class PoseStudioApp(QMainWindow):
         settings_layout.setContentsMargins(16, 16, 16, 16)
         settings_layout.setSpacing(8)
         
-        self.model_label = QLabel("Model Accuracy")
+        self.model_label = QLabel("Pose Engine")
         self.model_label.setObjectName("section_title")
         self.model_label.setAlignment(Qt.AlignLeft)
         settings_layout.addWidget(self.model_label)
+
+        provider_label = QLabel("Provider")
+        provider_label.setObjectName("field_label")
+        settings_layout.addWidget(provider_label)
+
+        self.provider_menu = QComboBox()
+        self.provider_menu.setCursor(Qt.PointingHandCursor)
+        self.provider_menu.addItems(PROVIDER_FILTERS)
+        self.provider_menu.currentIndexChanged.connect(self._refresh_model_menu)
+        settings_layout.addWidget(self.provider_menu)
+
+        coverage_label = QLabel("Keypoints")
+        coverage_label.setObjectName("field_label")
+        settings_layout.addWidget(coverage_label)
+
+        self.coverage_menu = QComboBox()
+        self.coverage_menu.setCursor(Qt.PointingHandCursor)
+        self.coverage_menu.addItems(COVERAGE_FILTERS)
+        self.coverage_menu.currentIndexChanged.connect(self._refresh_model_menu)
+        settings_layout.addWidget(self.coverage_menu)
+
+        model_select_label = QLabel("Model")
+        model_select_label.setObjectName("field_label")
+        settings_layout.addWidget(model_select_label)
         
         self.model_menu = QComboBox()
         self.model_menu.setCursor(Qt.PointingHandCursor)
-        self.model_menu.addItems([
-            "ViTPose - s (Small/Fast)", 
-            "ViTPose - b (Base)", 
-            "ViTPose - l (Large)", 
-            "ViTPose - h (Huge/Precise)",
-            "YOLO26 - n (Nano/Fastest)",
-            "YOLO26 - s (Small)",
-            "YOLO26 - m (Medium)",
-            "YOLO26 - l (Large)"
-        ])
-        self.model_menu.currentTextChanged.connect(self.change_model)
+        self.model_menu.currentIndexChanged.connect(self.change_model)
         settings_layout.addWidget(self.model_menu)
+
+        self.model_summary_label = QLabel("")
+        self.model_summary_label.setObjectName("model_summary")
+        self.model_summary_label.setAlignment(Qt.AlignLeft)
+        self.model_summary_label.setWordWrap(True)
+        settings_layout.addWidget(self.model_summary_label)
+
+        self._refresh_model_menu(load_model=False)
         sidebar_layout.addWidget(settings_card)
         
         sidebar_layout.addStretch()
@@ -359,11 +543,28 @@ class PoseStudioApp(QMainWindow):
                 letter-spacing: 0.5px;
                 margin-bottom: 2px;
             }
+            #field_label {
+                color: #515154;
+                font-size: 11px;
+                font-weight: 600;
+                margin-top: 6px;
+                margin-bottom: -2px;
+            }
             #status_text {
                 color: #333336;
                 font-size: 13px;
                 font-weight: 500;
                 line-height: 1.4;
+            }
+            #model_summary {
+                color: #515154;
+                background-color: #f5f5f7;
+                border: 1px solid #e5e5ea;
+                border-radius: 6px;
+                padding: 8px 10px;
+                font-size: 12px;
+                line-height: 1.35;
+                margin-top: 6px;
             }
             QComboBox {
                 background-color: #ffffff;
@@ -428,115 +629,114 @@ class PoseStudioApp(QMainWindow):
             logging.info("Debug mode deactivated via UI")
             logging.getLogger().setLevel(logging.WARNING)
 
-    def change_model(self, choice):
-        parts = choice.split("-")
-        model_type = parts[0].strip()
-        size = parts[1].strip().split(" ")[0] # gets 's', 'b', 'l', 'h' or 'n', 's', 'm', 'l'
-        
-        self.status_label.setText(f"Loading {model_type} {size.upper()}...\nPlease wait.")
+    def _filtered_model_items(self):
+        provider = self.provider_menu.currentText() if hasattr(self, "provider_menu") else "All providers"
+        coverage = self.coverage_menu.currentText() if hasattr(self, "coverage_menu") else "Any keypoints"
+
+        items = []
+        for item in MODEL_CATALOG:
+            if provider != "All providers" and item["provider"] != provider:
+                continue
+            if coverage != "Any keypoints" and item["coverage"] != coverage:
+                continue
+            items.append(item)
+        return items
+
+    def _refresh_model_menu(self, *args, load_model=True):
+        if not hasattr(self, "model_menu"):
+            return
+
+        previous_label = self.model_menu.currentText()
+        items = self._filtered_model_items()
+        if not items:
+            items = MODEL_CATALOG
+
+        self._updating_model_menu = True
+        self.model_menu.clear()
+        for item in items:
+            self.model_menu.addItem(item["label"], item)
+
+        next_index = 0
+        for idx, item in enumerate(items):
+            if item["label"] == previous_label:
+                next_index = idx
+                break
+        self.model_menu.setCurrentIndex(next_index)
+        self._updating_model_menu = False
+
+        self._update_model_summary()
+        if load_model and self.model_menu.count() > 0:
+            self.change_model(self.model_menu.currentIndex())
+
+    def _update_model_summary(self):
+        if not hasattr(self, "model_summary_label") or self.model_menu.currentIndex() < 0:
+            return
+        item = self.model_menu.currentData()
+        if not isinstance(item, dict):
+            self.model_summary_label.setText("")
+            return
+
+        summary = (
+            f"{item['provider']} | {item['coverage']} | {item['keypoints']} keypoints\n"
+            f"Scale: {item['scale']} | Runtime: {item['runtime']}"
+        )
+        self.model_summary_label.setText(summary)
+
+    def change_model(self, index, allow_startup_fallback=False):
+        if self._updating_model_menu or index < 0:
+            return
+
+        item = self.model_menu.itemData(index)
+        if not isinstance(item, dict):
+            return
+
+        choice = item["label"]
+        spec = dict(item["spec"])
+        self._update_model_summary()
+
+        self.status_label.setText(f"Loading {choice}...\nPlease wait.")
         self.status_label.setStyleSheet("color: #d97706; font-weight: 600;")
-        threading.Thread(target=self._load_specific_model, args=(model_type, size), daemon=True).start()
+        threading.Thread(target=self._load_specific_model, args=(choice, spec, allow_startup_fallback), daemon=True).start()
 
     @Slot(str, str)
     def _update_model_status(self, text, color):
         self.status_label.setText(text)
         self.status_label.setStyleSheet(f"color: {color}; font-weight: 600;")
 
-    def _load_specific_model(self, model_type="ViTPose", size="s"):
-        import torch
-        logging.info(f"Requested model change to type: {model_type}, size: {size}")
+    def _load_specific_model(self, label="MMPose RTMPose-S Body+Feet", spec=None, allow_startup_fallback=False):
+        spec = dict(spec or {"framework": "mmpose_rtmlib", "size": "lightweight", "pose_model": "body_with_feet", "tracking": False, "det_frequency": 1})
+        logging.info("Requested model change to %s with spec %s", label, spec)
         # Temporarily disable inference during swap
         with self.lock:
             old_model = self.model
             self.model = None
             if old_model is not None:
+                if hasattr(old_model, "close"):
+                    old_model.close()
                 del old_model
-                
-        device = 'cpu'
-        if torch.cuda.is_available():
-            device = 'cuda'
-        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
-            device = 'mps'
 
-        if model_type == "YOLO26":
-            try:
-                logging.info(f"Instantiating YOLO Pose wrapper with device={device}")
-                new_model = YOLOPoseWrapper(size=size, device=device)
-                with self.lock:
-                    self.model = new_model
-                logging.info("YOLO Pose model instantiated successfully")
-                self.model_status_signal.emit(f"Model Ready ({model_type}-{size.upper()} - {device})", "#059669")
-            except Exception as e:
-                logging.error(f"Model init error: {e}", exc_info=True)
-                self.model_status_signal.emit(f"Error: {e}", "#e30000")
-            return
+        spec["app_dir"] = os.path.dirname(os.path.abspath(__file__))
 
-        # Paths for ViTPose
-        curr_dir = os.path.dirname(os.path.abspath(__file__))
-        models_dir = os.path.join(curr_dir, 'models')
-        os.makedirs(models_dir, exist_ok=True)
-        
-        model_filename = f'vitpose-{size}-wholebody.pth'
-        model_path = os.path.join(models_dir, model_filename)
-        
-        base_dir = os.path.dirname(curr_dir)
-        old_model_path = os.path.join(base_dir, 'vitpose-s-wholebody.pth')
-        if size == 's' and not os.path.exists(model_path) and os.path.exists(old_model_path):
-            try:
-                shutil.move(old_model_path, model_path)
-                logging.info(f"Moved old model from {old_model_path} to {model_path}")
-            except Exception as e:
-                logging.warning(f"Could not move old model: {e}")
-                
-        dataset = 'wholebody'
-        if not os.path.exists(model_path):
-            self.status_label.setText(f"Downloading {size.upper()} model...\n(Can take minutes)")
-            logging.info(f"Downloading model {model_filename} from HuggingFace...")
-            try:
-                url = f"https://huggingface.co/JunkyByte/easy_ViTPose/resolve/main/torch/wholebody/{model_filename}"
-                urllib.request.urlretrieve(url, model_path)
-                logging.info("Model download complete.")
-            except Exception as e:
-                logging.error(f"Failed to download model: {e}")
-                model_path = os.path.join(models_dir, 'vitpose-s-coco.pth')
-                dataset = 'coco'
-                size = 's'
-        
-        yolo_path = os.path.join(models_dir, 'yolov8n.pt')
-        old_yolo_path = os.path.join(base_dir, 'yolo8n.pt')
-        old_yolov8n_path = os.path.join(base_dir, 'yolov8n.pt')
-        
-        if not os.path.exists(yolo_path):
-            if os.path.exists(old_yolo_path):
-                shutil.move(old_yolo_path, yolo_path)
-            elif os.path.exists(old_yolov8n_path):
-                shutil.move(old_yolov8n_path, yolo_path)
-        
-        device = 'cpu'
-        if torch.cuda.is_available():
-            device = 'cuda'
-        elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
-            device = 'mps'
-            
         try:
-            logging.info(f"Instantiating VitInference with device={device}, dataset={dataset}")
-            new_model = VitInference(
-                model_path,
-                yolo_path,
-                model_name=size,
-                yolo_size=320,
-                is_video=True,
-                device=device,
-                dataset=dataset,
-                yolo_step=1
-            )
+            logging.info("Starting isolated framework worker: %s", spec)
+            new_model = IsolatedFrameworkModel(spec)
             with self.lock:
                 self.model = new_model
-            logging.info("VitInference model instantiated successfully")
-            self.model_status_signal.emit(f"Model Ready ({size.upper()} - {device})", "#059669")
+            details = " / ".join(str(v) for v in (new_model.backend, new_model.device) if v)
+            suffix = f" - {details}" if details else ""
+            self.model_status_signal.emit(f"Model Ready ({label}{suffix})", "#059669")
         except Exception as e:
+            if allow_startup_fallback and spec.get("framework") == "sapiens2" and not os.environ.get("SAPIENS_ROOT"):
+                logging.warning("Sapiens2 is not configured on this Mac. Falling back to MMPose RTMLib: %s", e)
+                fallback_label, fallback_spec = FRAMEWORK_CHOICES[0]
+                self.model_status_signal.emit(
+                    f"{label} is not configured on this Mac.\nLoading {fallback_label} instead.",
+                    "#d97706",
+                )
+                self._load_specific_model(fallback_label, dict(fallback_spec), allow_startup_fallback=False)
+                return
             logging.error(f"Model init error: {e}", exc_info=True)
-            self.model_status_signal.emit(f"Error: {e}", "#e30000")
+            self.model_status_signal.emit(f"{label} Error: {e}", "#e30000")
 
     def _ffmpeg_writer_loop(self, proc):
         target_fps = 30.0
@@ -644,8 +844,10 @@ class PoseStudioApp(QMainWindow):
                     self.csv_file = open(csv_filename, 'w', newline='')
                     self.csv_writer = csv.writer(self.csv_file)
                     
-                    dataset_name = getattr(self.model, 'dataset', 'wholebody') if self.model else 'wholebody'
-                    num_kps = 133 if dataset_name == 'wholebody' else 17
+                    num_kps = getattr(self.model, 'keypoint_count', None) if self.model else None
+                    if num_kps is None:
+                        dataset_name = getattr(self.model, 'dataset', 'wholebody') if self.model else 'wholebody'
+                        num_kps = 133 if dataset_name == 'wholebody' else 17
                     
                     header = ["frame_index", "timestamp_sec", "person_id"]
                     for i in range(num_kps):
@@ -693,6 +895,8 @@ class PoseStudioApp(QMainWindow):
         with self.lock:
             if self.csv_file is not None:
                 self.csv_file.close()
+            if self.model is not None and hasattr(self.model, "close"):
+                self.model.close()
                 
         self.camera_thread.stop()
         if hasattr(self, 'cap') and self.cap.isOpened():

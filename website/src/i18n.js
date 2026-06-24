@@ -26,18 +26,18 @@ const translations = {
       items: [
         {
           icon: '🧍',
-          title: 'Wholebody Detection',
-          desc: 'Automatically detects facial mesh, finger joints, and full body skeletons using the vitpose-s-wholebody model.'
+          title: 'Pose Model Selector',
+          desc: 'Filter by provider and keypoint coverage, then choose among RTMPose, RTMW, Sapiens2, ViTPose, and YOLO pose models.'
         },
         {
           icon: '⚡',
-          title: 'Real-Time Inference',
-          desc: 'Powered by YOLOv8 human detection and SORT tracking, optimized for efficient performance across platforms.'
+          title: 'Isolated Engines',
+          desc: 'Loads Sapiens2, MMPose RTMLib models, ViTPose, and YOLO in independent worker processes.'
         },
         {
           icon: '💻',
-          title: 'Cross-Platform',
-          desc: 'Compatible with Windows, macOS, and Linux. Built-in dependency management with FFmpeg integration.'
+          title: 'Mac-Oriented Defaults',
+          desc: 'Starts from RTMPose-S Body+Feet while keeping heavier whole-body and offline options selectable.'
         }
       ]
     },
@@ -48,26 +48,27 @@ const translations = {
       cards: [
         {
           step: '01',
-          title: 'YOLOv8 Detection',
-          desc: 'YOLOv8 identifies human bounding boxes in the frame with high accuracy, functioning well in complex scenes.'
+          title: 'MMPose RTMLib Worker',
+          desc: 'The first model runs RTMPose-S Body+Feet with ONNX Runtime CPU on Mac for reliable skeleton output.'
         },
         {
           step: '02',
-          title: 'SORT Tracking',
-          desc: 'Simple Online and Realtime Tracking (SORT) assigns unique IDs to individuals, maintaining temporal consistency.'
+          title: 'Sapiens2 Worker',
+          desc: 'Sapiens2 remains available as a heavyweight high-detail option in a separate Python environment.'
         },
         {
           step: '03',
-          title: 'ViTPose Analysis',
-          desc: 'The ViTPose engine processes cropped bounding boxes to extract 2D keypoints and skeletal structures.'
+          title: 'Optional Engines',
+          desc: 'ViTPose, YOLO pose, RTMW whole-body, and Sapiens2 remain available from the same desktop UI.'
         }
       ]
     },
     citation: {
       title1: 'Academic References',
       subtitleVomee: 'Pose Studio is derived from our multimodal data collection platform, Vomee. If you use our tool in your research, please consider citing our paper:',
-      subtitleVitpose: 'Our core skeleton extraction engine is built upon the incredible ViTPose foundation model. Please also acknowledge their pioneering work:',
-      subtitleYolo: 'Pose Studio also integrates Ultralytics YOLO26 for high-performance inference. Please cite their work if you use YOLO models:',
+      subtitleSapiens: 'Pose Studio includes Sapiens2 as an offline frontier pose framework. Please cite Sapiens2 when you use that engine:',
+      subtitleYolo: 'Pose Studio includes Ultralytics YOLO pose models as selectable lightweight pose engines. Please cite their work if you use YOLO models:',
+      subtitlePose2Sim: 'Pose Studio can interoperate with Pose2Sim workflows through RTMLib-compatible keypoint formats. Please cite Pose2Sim when you use the full Pose2Sim pipeline:',
     },
     footer: {
       brandDesc: 'A lightweight version of Vomee. Providing seamless RGB-based visual motion capture.',
@@ -115,18 +116,18 @@ const translations = {
       items: [
         {
           icon: '🧍',
-          title: '全身联合检测',
-          desc: '使用 vitpose-s-wholebody 模型，自动提取面部特征、手指关节及全身骨架。'
+          title: '姿态模型选择器',
+          desc: '按提供商和关键点覆盖范围筛选，再选择 RTMPose、RTMW、Sapiens2、ViTPose 或 YOLO pose 模型。'
         },
         {
           icon: '⚡',
-          title: '实时推理',
-          desc: '基于 YOLOv8 人体检测和 SORT 目标跟踪，针对不同操作系统平台进行了性能优化。'
+          title: '独立引擎进程',
+          desc: 'Sapiens2、MMPose RTMLib 模型、ViTPose 与 YOLO 分别在独立 worker 进程中加载。'
         },
         {
           icon: '💻',
-          title: '跨平台支持',
-          desc: '兼容 Windows、macOS 和 Linux。内置 FFmpeg 环境依赖处理，降低使用门槛。'
+          title: '面向 Mac 的默认选择',
+          desc: '启动时选中 RTMPose-S Body+Feet，同时保留更重的 whole-body 与离线选项。'
         }
       ]
     },
@@ -137,26 +138,27 @@ const translations = {
       cards: [
         {
           step: '01',
-          title: 'YOLOv8 目标检测',
-          desc: '通过 YOLOv8 快速识别画面中的人体边界框，能够较好地适应复杂的环境背景。'
+          title: 'MMPose RTMLib Worker',
+          desc: '首个模型在 Mac 上使用 ONNX Runtime CPU 跑 RTMPose-S Body+Feet，以保证 skeleton 稳定输出。'
         },
         {
           step: '02',
-          title: 'SORT 目标跟踪',
-          desc: '使用 SORT 算法为画面中的目标分配独立 ID，保持视频帧之间的人物跟踪一致性。'
+          title: 'Sapiens2 Worker',
+          desc: 'Sapiens2 作为高细节但更重的选项保留在独立 Python 环境中。'
         },
         {
           step: '03',
-          title: 'ViTPose 姿态分析',
-          desc: 'ViTPose 引擎对裁剪出的人体区域进行分析，输出相应的 2D 骨骼关键点结构。'
+          title: '可选引擎',
+          desc: 'ViTPose、YOLO pose、RTMW whole-body 与 Sapiens2 都可在同一个桌面端直接选择。'
         }
       ]
     },
     citation: {
       title1: '学术引用',
       subtitleVomee: 'Pose Studio 衍生自我们的多模态数据采集平台 Vomee。如果您在研究中使用了本工具，欢迎引用我们的论文：',
-      subtitleVitpose: '本项目的核心骨骼特征提取基于优秀的 ViTPose 基础模型。也请在研究中致谢他们的开创性工作：',
-      subtitleYolo: 'Pose Studio 同时集成了极致性能的 Ultralytics YOLO26 推理引擎。如果您使用了 YOLO 模型，也请引用他们的工作：',
+      subtitleSapiens: 'Pose Studio 包含 Sapiens2 作为离线 frontier 姿态框架。如果使用该引擎，请引用 Sapiens2：',
+      subtitleYolo: 'Pose Studio 包含 Ultralytics YOLO pose 模型作为可选轻量姿态引擎。如果使用 YOLO 模型，请引用他们的工作：',
+      subtitlePose2Sim: 'Pose Studio 可通过 RTMLib 兼容关键点格式接入 Pose2Sim 工作流。如果使用完整 Pose2Sim pipeline，请引用 Pose2Sim：',
     },
     footer: {
       brandDesc: '基于 Vomee 打造的轻量级版本，提供流畅的 RGB 视觉动作捕捉体验。',

@@ -13,15 +13,16 @@
 
 <br/>
 
-**Pose Studio** is a distilled, lightweight version of our comprehensive multimodal data collection platform, [**Vomee**](https://doi.org/10.1145/3737904.3768536). While Vomee handles complex multimodal sensing (Video, Audio, mmWave, and Skeleton Data), **Pose Studio** is specifically designed to focus on **RGB-based visual motion capture**. It extracts the foundational capabilities of the ViTPose engine and pairs them with a beautiful graphical user interface built with `PySide6` (Qt for Python), providing seamless, out-of-the-box human pose estimation and synchronization functions for your daily research or creative needs.
+**Pose Studio** is a distilled, lightweight version of our comprehensive multimodal data collection platform, [**Vomee**](https://doi.org/10.1145/3737904.3768536). While Vomee handles complex multimodal sensing (Video, Audio, mmWave, and Skeleton Data), **Pose Studio** is specifically designed to focus on **RGB-based visual motion capture**. It supports MMPose RTMLib, Sapiens2, ViTPose, and YOLO pose models through a filtered model selector.
 
 ---
 
 ## ✨ Key Features
 
 - 🖥️ **Modern Cross-Platform UI**: A sleek, fully-responsive macOS-style light mode interface with a card-based side control panel and live camera preview. Works seamlessly on **Windows, macOS, and Linux**.
-- 🧍 **Wholebody Detection**: Automatically detects full facial mesh, detailed finger joints, and full body skeletons using the state-of-the-art `vitpose-s-wholebody` model. *(Auto-downloads on first launch!)*
-- ⚡ **Real-Time Inference Pipeline**: Powered by **YOLOv8 & YOLO26** for rapid human bounding box detection and extreme high-FPS tracking, alongside **SORT** and **ViTPose** for precise 2D keypoint extraction.
+- 🧍 **Filtered Pose Model Selector**: Select by provider and keypoint coverage, then choose among RTMPose, RTMW, Sapiens2, ViTPose, and YOLO pose models.
+- ⚡ **Independent Framework Processes**: Loads Sapiens2, MMPose RTMLib models, ViTPose, and YOLO in separate worker processes so framework dependencies do not share one runtime.
+- 🧪 **Mac-Oriented Defaults**: Starts from RTMPose-S Body+Feet, while keeping heavier whole-body and offline options selectable.
 - 🎬 **Synchronized AV Recording Engine**: Uses a robust FFmpeg integration to perfectly synchronize live audio (from your system's microphone) with the skeleton-overlaid video. Handles hardware frame-rate jitter effortlessly by zero-padding to a strict 30 FPS.
 - 📊 **CSV Data Collection**: Every time you hit record, a synchronized `.csv` dataset is generated containing frame-by-frame data for all tracking keypoints, perfectly matched to the `.mp4` video timeline.
 
@@ -34,6 +35,36 @@ Before you start, make sure you have FFmpeg installed on your machine:
 - 🍎 **macOS**: `brew install ffmpeg`
 - 🐧 **Linux (Ubuntu/Debian)**: `sudo apt install ffmpeg`
 - 🪟 **Windows**: `winget install ffmpeg` *(or download from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/))*
+
+Pose Studio opens with MMPose RTMLib / RTMPose-S Body+Feet selected for realtime use. Upstream Sapiens2 requires Python 3.12+ and PyTorch 2.7+, so on macOS we recommend a dedicated `pose-sapiens` conda environment and keeping any older `pose` environment as a backup when you want to test Sapiens2.
+
+Configure the Mac Sapiens2 environment with:
+
+```bash
+conda create -n pose-sapiens python=3.12 -y
+conda activate pose-sapiens
+pip install torch==2.8.0 torchvision==0.23.0
+pip install -r requirements.txt
+
+git clone https://github.com/facebookresearch/sapiens2
+cd sapiens2
+pip install -e .
+
+conda env config vars set -n pose-sapiens \
+  SAPIENS_ROOT=/path/to/sapiens2 \
+  SAPIENS_CHECKPOINT_ROOT=~/sapiens2_host \
+  SAPIENS_DEVICE=mps
+
+conda deactivate
+conda activate pose-sapiens
+
+hf download facebook/sapiens2-pose-0.4b sapiens2_0.4b_pose.safetensors --local-dir "$SAPIENS_CHECKPOINT_ROOT/pose"
+hf download facebook/detr-resnet-101-dc5 --local-dir "$SAPIENS_CHECKPOINT_ROOT/detector/detr-resnet-101-dc5"
+```
+
+Mac reality check: RTMPose is the practical local realtime route on Apple Silicon when body pose is the priority. Pose Studio defaults to RTMPose-S Body+Feet with every-frame detection and RTMLib tracking disabled, because RTMW whole-body models spend extra compute on face and hand keypoints and the balanced whole-body model can fluctuate on CPU when the detector and pose model run in the same realtime loop. Sapiens2 is the frontier route, but even 0.4B can run at very low FPS on Mac because it performs high-resolution 308-keypoint top-down inference with a separate person detector. Pose Studio therefore defaults to RTMPose, with RTMW and Sapiens2 kept as explicit high-detail options.
+
+The realtime backend runs through `rtmlib`, which provides MMPose RTMPose/RTMW ONNX models without requiring the full offline Pose2Sim workflow. On macOS the app defaults these RTMLib models to ONNX Runtime CPU instead of CoreML, because the available CoreML provider can process frames but fail to return drawable skeleton tensors for these ONNX exports. The full `pose2sim` package is intentionally not in the default Mac requirements because it pulls in PyAV, which can load FFmpeg/AVFoundation dylibs that conflict with OpenCV on macOS. Install full Pose2Sim in a separate environment if you need offline multiview kinematics.
 
 ---
 
@@ -101,17 +132,39 @@ If you encounter crashes (like macOS `SIGBUS` errors) or unexpected behavior, Po
 }
 ```
 
-Pose Studio also integrates **Ultralytics YOLO26** for high-performance end-to-end tracking. Please also consider citing their work if you utilize the YOLO engine:
+Pose Studio includes **Sapiens2** as an offline/frontier pose framework. Please cite Sapiens2 when you use the Sapiens2 engine:
 
 ```bibtex
-@software{yolo26_ultralytics,
+@article{khirodkarsapiens2,
+  title={Sapiens2: Foundation for Human Vision Models},
+  author={Khirodkar, Rawal and Bagautdinov, Timur and Martinez, Julieta and Zhao, Su and James, Stephen and Selednik, Peter and Anderson, Stuart and Saito, Shunsuke},
+  journal={arXiv preprint arXiv:2604.21681},
+  year={2026}
+}
+```
+
+Pose Studio includes **Ultralytics YOLO** pose models as selectable lightweight pose engines. Please cite their work if you use YOLO models:
+
+```bibtex
+@software{yolo_ultralytics,
   author = {Glenn Jocher and Jing Qiu},
-  title = {Ultralytics YOLO26},
-  version = {26.0.0},
+  title = {Ultralytics YOLO},
   year = {2026},
   url = {https://github.com/ultralytics/ultralytics},
-  orcid = {0000-0001-5950-6979, 0000-0003-3783-7069},
   license = {AGPL-3.0}
+}
+```
+
+Pose Studio can interoperate with **Pose2Sim** workflows through RTMLib-compatible keypoint formats. Please cite Pose2Sim when you use the full Pose2Sim pipeline:
+
+```bibtex
+@Article{Pagnon_2022_JOSS,
+  AUTHOR = {Pagnon, David and Domalain, Mathieu and Reveret, Lionel},
+  TITLE = {Pose2Sim: An open-source Python package for multiview markerless kinematics},
+  JOURNAL = {Journal of Open Source Software},
+  YEAR = {2022},
+  DOI = {10.21105/joss.04362},
+  URL = {https://joss.theoj.org/papers/10.21105/joss.04362}
 }
 ```
 
