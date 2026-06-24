@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { HelpCircle, X } from 'lucide-react';
 import { engine } from './engine/engineInstance';
 import type { VideoSourceInput } from './engine/VideoEngine';
@@ -6,27 +6,24 @@ import { audioPlayer } from './engine/AudioPlayer';
 import { skeleton } from './engine/skeleton';
 import { useStore, registerEngineTimeLookup } from './state/useStore';
 import { loadActionLabels, getEffectiveActions } from './utils/actionStore';
+import { loadSavedAnnotations } from './utils/autosave';
 import { usePlayback } from './hooks/usePlayback';
 import { useKeyboard } from './hooks/useKeyboard';
+import { useAutosave } from './hooks/useAutosave';
 import VideoCanvas from './components/VideoCanvas';
 import SkeletonCanvas from './components/SkeletonCanvas';
+import ConfidenceBars from './components/ConfidenceBars';
+import VideoLibrary from './components/VideoLibrary';
 import TransportControls from './components/TransportControls';
 import Timeline from './components/Timeline';
 import AnnotationPanel from './components/AnnotationPanel';
 import PoseErrorPanel from './components/PoseErrorPanel';
 import RepTable from './components/RepTable';
-import ExportBar from './components/ExportBar';
+import SaveStatus from './components/SaveStatus';
 import ShortcutsOverlay from './components/ShortcutsOverlay';
 import Tutorial from './components/Tutorial';
 
 const WEBCODECS_OK = typeof window !== 'undefined' && 'VideoDecoder' in window;
-
-interface ManifestEntry {
-  video: string;
-  skeleton: string;
-  frame_count?: number;
-  fps?: number;
-}
 
 export default function App() {
   const meta = useStore((s) => s.meta);
@@ -36,23 +33,17 @@ export default function App() {
   const resetForNewVideo = useStore((s) => s.resetForNewVideo);
   const setActionTypes = useStore((s) => s.setActionTypes);
   const setHasSkeleton = useStore((s) => s.setHasSkeleton);
+  const restoreAnnotations = useStore((s) => s.restoreAnnotations);
+  const setAnnotationsReady = useStore((s) => s.setAnnotationsReady);
   const toggleShortcuts = useStore((s) => s.toggleShortcuts);
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [dragOver, setDragOver] = useState(false);
-  const [manifest, setManifest] = useState<ManifestEntry[]>([]);
   const [skeletonWarning, setSkeletonWarning] = useState('');
 
   usePlayback();
   useKeyboard();
-
-  // discover pre-processed videos (videos/ + mediapipe_skeleton/) served by the dev server
-  useEffect(() => {
-    fetch('/mediapipe_skeleton/manifest.json')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d && Array.isArray(d.videos)) setManifest(d.videos); })
-      .catch(() => {});
-  }, []);
+  useAutosave();
 
   const loadVideo = useCallback(
     async (src: VideoSourceInput, skeletonUrl?: string) => {
@@ -78,6 +69,9 @@ export default function App() {
         } else {
           setSkeletonWarning('');
         }
+        // restore prior annotations for this video (resume), THEN enable autosave
+        restoreAnnotations(await loadSavedAnnotations(m.name));
+        setAnnotationsReady(true);
         setStatus('idle');
       } catch (err) {
         skeleton.clear();
@@ -86,7 +80,7 @@ export default function App() {
         setStatus('error');
       }
     },
-    [resetForNewVideo, setActionTypes, setHasSkeleton],
+    [resetForNewVideo, setActionTypes, setHasSkeleton, restoreAnnotations, setAnnotationsReady],
   );
 
   const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -134,7 +128,7 @@ export default function App() {
             title="Written into the CSV `annotator` column"
           />
         )}
-        {meta && <ExportBar />}
+        {meta && <SaveStatus />}
         <button className="help-btn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)" onClick={toggleShortcuts}><HelpCircle size={18} /></button>
       </header>
 
@@ -163,30 +157,16 @@ export default function App() {
               </div>
             ) : (
               <>
-                <div className="dropzone-logo">◉</div>
-                <h1>Select a video to annotate</h1>
-                <p>Drop a video here, or choose one below. Everything runs locally.</p>
-                <label className="load-btn big">
-                  Choose video file
-                  <input type="file" accept="video/*,.m4v,.mp4,.webm,.mov" onChange={onPick} hidden />
-                </label>
-
-                {manifest.length > 0 && (
-                  <div className="manifest-list">
-                    <h3>Pre-processed videos <span className="manifest-sub">(with MediaPipe skeleton)</span></h3>
-                    {manifest.map((e) => (
-                      <button
-                        key={e.video}
-                        className="manifest-item"
-                        onClick={() => loadVideo({ url: `/videos/${e.video}`, name: e.video }, `/mediapipe_skeleton/${e.skeleton}`)}
-                      >
-                        <span className="mi-name">{e.video}</span>
-                        <span className="mi-meta">{e.frame_count ? `${e.frame_count} frames` : ''} · skeleton ✓</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <p className="dropzone-hint">Chrome / Edge recommended</p>
+                <div className="wl-head">
+                  <div className="dropzone-logo">◉</div>
+                  <h1>Video library</h1>
+                  <p>Pick a video below to annotate, or drop a new file into the <code>videos/</code> folder and pre-process it here.</p>
+                  <label className="load-btn big">
+                    Choose video file
+                    <input type="file" accept="video/*,.m4v,.mp4,.webm,.mov" onChange={onPick} hidden />
+                  </label>
+                </div>
+                <VideoLibrary onSelect={(v) => loadVideo({ url: `/videos/${v}`, name: v })} />
               </>
             )}
           </div>
@@ -199,7 +179,12 @@ export default function App() {
           <div className="main-col">
             <div className="stage">
               <VideoCanvas />
-              {hasSkeleton && <SkeletonCanvas />}
+              {hasSkeleton && (
+                <div className="skeleton-col">
+                  <SkeletonCanvas />
+                  <ConfidenceBars />
+                </div>
+              )}
             </div>
             <TransportControls />
             <Timeline />

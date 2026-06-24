@@ -17,8 +17,8 @@ Usage:
 Output JSON schema (per video):
     {
       "video": "foo.m4v", "width": W, "height": H, "fps": F, "frame_count": N,
-      "model": "mediapipe_pose", "num_landmarks": 33,
-      "frames": [ [x0,y0,v0, x1,y1,v1, ... 33 landmarks] | null, ... ]   # x,y normalized [0,1]
+      "model": "mediapipe_pose", "num_landmarks": 33, "values_per_landmark": 4,
+      "frames": [ [x0,y0,z0,v0, ... 33 landmarks] | null, ... ]   # x,y normalized; z depth; v visibility/confidence
     }
 """
 import argparse
@@ -50,7 +50,7 @@ def scaffold_action_labels(base):
     path = os.path.join(ACTION_DIR, base + ".json")
     if os.path.exists(path):
         return
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(DEFAULT_ACTION_LABELS, f, indent=2)
     print(f"  ↳ action labels stub: {path}  (edit to set this video's labels)")
 
@@ -82,6 +82,7 @@ def extract_one(video_path, pose, max_frames=None, progress_every=200):
     detected = 0
     idx = 0
     t0 = time.time()
+    print(f"__PROGRESS__ 0 {declared}", flush=True)  # machine-readable for the dev-server GUI
     while True:
         ok, frame_bgr = cap.read()
         if not ok:
@@ -92,8 +93,11 @@ def extract_one(video_path, pose, max_frames=None, progress_every=200):
         if res.pose_landmarks:
             flat = []
             for lm in res.pose_landmarks.landmark:
+                # store full detail per landmark: x, y (normalized 0..1), z (relative depth),
+                # visibility (0..1 confidence). The web app reads stride from values_per_landmark.
                 flat.append(round(float(lm.x), 4))
                 flat.append(round(float(lm.y), 4))
+                flat.append(round(float(lm.z), 4))
                 flat.append(round(float(lm.visibility), 3))
             frames.append(flat)
             detected += 1
@@ -103,9 +107,11 @@ def extract_one(video_path, pose, max_frames=None, progress_every=200):
         if progress_every and idx % progress_every == 0:
             rate = idx / max(1e-6, time.time() - t0)
             print(f"    {idx} frames ({rate:.1f} fps)…", flush=True)
+            print(f"__PROGRESS__ {idx} {declared}", flush=True)
         if max_frames and idx >= max_frames:
             break
     cap.release()
+    print(f"__PROGRESS__ {len(frames)} {declared or len(frames)}", flush=True)
     # The web app indexes frames in presentation order (sorted packet timestamps); OpenCV
     # reads them in the same order for constant-frame-rate video, so frame i here == frame i
     # there. A big mismatch vs the container's declared count signals a truncated/VFR file
@@ -122,11 +128,18 @@ def extract_one(video_path, pose, max_frames=None, progress_every=200):
         "detected_frames": detected,
         "model": "mediapipe_pose",
         "num_landmarks": 33,
+        "values_per_landmark": 4,  # x, y, z, visibility
         "frames": frames,
     }
 
 
 def main():
+    # progress markers are parsed by the dev server; force UTF-8 stdout so a non-UTF-8
+    # Windows console code page can't mangle them
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
     ap = argparse.ArgumentParser(description="Extract MediaPipe Pose skeletons for the Rep Annotator.")
     ap.add_argument("paths", nargs="*", help="Specific video file(s); default: all in ./videos")
     ap.add_argument("--force", action="store_true", help="Re-extract even if output JSON exists")
@@ -149,7 +162,7 @@ def main():
     manifest = {}
     if os.path.exists(manifest_path):
         try:
-            with open(manifest_path) as f:
+            with open(manifest_path, encoding="utf-8") as f:
                 manifest = {e["video"]: e for e in json.load(f).get("videos", [])}
         except Exception:
             manifest = {}
@@ -176,7 +189,7 @@ def main():
             data = extract_one(video_path, pose, max_frames=args.max_frames)
         data["video"] = name
 
-        with open(out_path, "w") as f:
+        with open(out_path, "w", encoding="utf-8") as f:
             json.dump(data, f, separators=(",", ":"))
         size_mb = os.path.getsize(out_path) / 1e6
         print(f"  ✓ {out_path}  ({data['frame_count']} frames, "
@@ -191,7 +204,7 @@ def main():
             "height": data["height"],
         }
 
-    with open(manifest_path, "w") as f:
+    with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump({"videos": list(manifest.values())}, f, indent=2)
     print(f"\nManifest: {manifest_path} ({len(manifest)} video(s))")
     print("Now run `npm run dev` and the tool will offer these videos for annotation.")

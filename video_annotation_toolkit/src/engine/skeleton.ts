@@ -10,9 +10,21 @@ export interface SkeletonData {
   fps: number;
   frameCount: number;
   numLandmarks: number;
-  /** Per frame: Float32Array of [x,y,vis] × numLandmarks (x,y normalized 0..1), or null if no pose. */
+  /** Values per landmark: 3 (x,y,visibility) for older files, 4 (x,y,z,visibility) for newer. */
+  stride: number;
+  /** Per frame: Float32Array of [x,y,(z,)vis] × numLandmarks (x,y normalized 0..1), or null. */
   frames: (Float32Array | null)[];
 }
+
+/** MediaPipe Pose 33-landmark names (index → name), for the confidence-bar hover readout. */
+export const LANDMARK_NAMES: readonly string[] = [
+  'nose', 'left eye (inner)', 'left eye', 'left eye (outer)', 'right eye (inner)', 'right eye',
+  'right eye (outer)', 'left ear', 'right ear', 'mouth (left)', 'mouth (right)',
+  'left shoulder', 'right shoulder', 'left elbow', 'right elbow', 'left wrist', 'right wrist',
+  'left pinky', 'right pinky', 'left index', 'right index', 'left thumb', 'right thumb',
+  'left hip', 'right hip', 'left knee', 'right knee', 'left ankle', 'right ankle',
+  'left heel', 'right heel', 'left foot index', 'right foot index',
+];
 
 /** MediaPipe Pose (33-landmark) connections — full set incl. face, so bad/garbage poses are obvious. */
 export const POSE_CONNECTIONS: ReadonlyArray<readonly [number, number]> = [
@@ -39,13 +51,21 @@ class SkeletonStore {
       const raw = await res.json();
       const rawFrames: (number[] | null)[] = raw.frames ?? [];
       const frames: (Float32Array | null)[] = rawFrames.map((f) => (f ? Float32Array.from(f) : null));
+      const numLandmarks = raw.num_landmarks ?? 33;
+      // stride = values per landmark; from the file, or inferred from the first detected frame
+      let stride: number = raw.values_per_landmark ?? 0;
+      if (!stride) {
+        const first = frames.find((f) => f);
+        stride = first && numLandmarks ? Math.round(first.length / numLandmarks) : 3;
+      }
       this.data = {
         video: raw.video ?? '',
         width: raw.width ?? 0,
         height: raw.height ?? 0,
         fps: raw.fps ?? 0,
         frameCount: raw.frame_count ?? frames.length,
-        numLandmarks: raw.num_landmarks ?? 33,
+        numLandmarks,
+        stride: stride || 3,
         frames,
       };
       return this.data;

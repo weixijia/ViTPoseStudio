@@ -37,11 +37,12 @@ export default function Tutorial() {
       </section>
 
       <section>
-        <h3>How to save</h3>
+        <h3>How it saves</h3>
+        <p>Everything saves automatically — there’s nothing to download.</p>
         <ul>
-          <li><strong>Reps</strong> (download) — one row per rep: action, start/end frame, duration.</li>
-          <li><strong>Pose</strong> (download) — one row per flagged frame: labels and note.</li>
-          <li><strong>Save</strong> — a JSON project snapshot; reload it later with <strong>Load</strong> to resume.</li>
+          <li><strong>Where</strong> — each video gets its own folder: <code>annotation/&lt;video&gt;/rep_counting.json</code> (reps) and <code>pose_analysis.json</code> (flagged frames).</li>
+          <li><strong>When</strong> — edits are written within a second; the header shows the current save status.</li>
+          <li><strong>Resume</strong> — reopen the same video later and your earlier labels load back automatically.</li>
         </ul>
       </section>
 

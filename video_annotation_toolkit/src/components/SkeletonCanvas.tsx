@@ -59,26 +59,27 @@ export default function SkeletonCanvas() {
         ctx.textAlign = 'left';
       } else {
         // connections
+        const S = skeleton.data?.stride ?? 3; // values per landmark (3 or 4); confidence is the last
         ctx.lineWidth = Math.max(2, w / 320);
         ctx.lineCap = 'round';
         for (const [a, b] of POSE_CONNECTIONS) {
-          const av = lm[a * 3 + 2];
-          const bv = lm[b * 3 + 2];
+          const av = lm[a * S + S - 1];
+          const bv = lm[b * S + S - 1];
           if (av < MIN_VIS || bv < MIN_VIS) continue;
           ctx.strokeStyle = `rgba(79,209,255,${Math.min(1, Math.min(av, bv) + 0.2)})`;
           ctx.beginPath();
-          ctx.moveTo(lm[a * 3] * w, lm[a * 3 + 1] * h);
-          ctx.lineTo(lm[b * 3] * w, lm[b * 3 + 1] * h);
+          ctx.moveTo(lm[a * S] * w, lm[a * S + 1] * h);
+          ctx.lineTo(lm[b * S] * w, lm[b * S + 1] * h);
           ctx.stroke();
         }
         // joints
         const r = Math.max(3, w / 240);
-        for (let i = 0; i < lm.length / 3; i++) {
-          const v = lm[i * 3 + 2];
+        for (let i = 0; i < lm.length / S; i++) {
+          const v = lm[i * S + S - 1];
           if (v < MIN_VIS) continue;
           ctx.fillStyle = `rgba(255,210,63,${Math.min(1, v + 0.2)})`;
           ctx.beginPath();
-          ctx.arc(lm[i * 3] * w, lm[i * 3 + 1] * h, r, 0, Math.PI * 2);
+          ctx.arc(lm[i * S] * w, lm[i * S + 1] * h, r, 0, Math.PI * 2);
           ctx.fill();
         }
       }

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Rep, VideoMeta, ProjectState, ActionTypeDef, PoseError } from '../types';
 import { ACTION_TYPES } from '../config/actions.config';
+import type { SaveStatus, RestoredAnnotations } from '../utils/autosave';
 
 let repCounter = 0;
 function newId(): string {
@@ -47,6 +48,10 @@ interface AppState {
   poseDirty: boolean;
   skeletonBackdrop: boolean;
   hasSkeleton: boolean;
+
+  // ---- persistence (auto-save to annotation/<video>/) ----
+  saveStatus: SaveStatus;
+  annotationsReady: boolean; // true once a video's saved annotations have loaded — gates autosave
 
   // ---- ui ----
   showShortcuts: boolean;
@@ -95,6 +100,9 @@ interface AppState {
   clearPoseFrame: (frame: number) => void;
   toggleSkeletonBackdrop: () => void;
   setHasSkeleton: (has: boolean) => void;
+  setSaveStatus: (s: SaveStatus) => void;
+  setAnnotationsReady: (ready: boolean) => void;
+  restoreAnnotations: (a: RestoredAnnotations) => void;
 
   // ---- ui actions ----
   toggleShortcuts: () => void;
@@ -165,6 +173,9 @@ export const useStore = create<AppState>((set, get) => ({
   poseDirty: false,
   skeletonBackdrop: true,
   hasSkeleton: false,
+
+  saveStatus: 'idle',
+  annotationsReady: false,
 
   showShortcuts: false,
 
@@ -340,6 +351,14 @@ export const useStore = create<AppState>((set, get) => ({
   },
   toggleSkeletonBackdrop: () => set({ skeletonBackdrop: !get().skeletonBackdrop }),
   setHasSkeleton: (hasSkeleton) => set({ hasSkeleton }),
+  setSaveStatus: (saveStatus) => set({ saveStatus }),
+  setAnnotationsReady: (annotationsReady) => set({ annotationsReady }),
+  restoreAnnotations: (a) =>
+    set({
+      reps: renumberReps(a.reps),
+      poseErrors: a.poseErrors,
+      annotator: a.annotator || get().annotator,
+    }),
 
   toggleShortcuts: () => set({ showShortcuts: !get().showShortcuts }),
 
@@ -364,6 +383,8 @@ export const useStore = create<AppState>((set, get) => ({
   resetForNewVideo: (meta) =>
     set({
       meta,
+      annotationsReady: false,
+      saveStatus: 'idle',
       reps: [],
       poseErrors: {},
       poseDraftFrame: null,

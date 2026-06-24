@@ -4,22 +4,22 @@ A frame-accurate, **fully-local** web tool for annotating fitness coaching video
 **rep-counting ground truth** for machine-learning training.
 
 Load a video, scrub it frame-by-frame like Final Cut / 剪映, mark the start and end frame of
-each movement cycle (a *rep*), tag it with an action type, optionally add notes, and export
-**one CSV row per rep**.
+each movement cycle (a *rep*), tag it with an action type, optionally add notes. Everything
+**auto-saves to disk** as JSON — one record per rep, plus per-frame pose-quality flags.
 
 - **Frame-accurate.** A plain HTML `<video>` element only does *best-effort* seeking, so the
   paused frame may not be the frame you think it is — unacceptable for rep-counting labels.
   This tool decodes frames with [Mediabunny](https://mediabunny.dev/) (demux) + the browser
   **WebCodecs API**, addressing every frame by an exact integer index built from the file's
-  packet timestamps. The frame numbers written to the CSV are exact.
-- **100% local.** Your video never leaves the machine — no upload, no backend, no server.
+  packet timestamps. The frame numbers written to disk are exact.
+- **100% local.** Your video never leaves the machine — no upload, no cloud.
 - **Editor-grade timeline.** A clean clip track, adaptive ruler (frames↔seconds↔minutes),
   draggable playhead, zoom, and draggable rep boundaries with snapping.
 - **Synced audio.** Plays the file's audio track in sync with the video (audio is the
   playback clock); mute toggle in the transport bar.
 - **Pose-quality review.** Optionally pre-extract a MediaPipe skeleton and review it
   frame-by-frame in a split **RGB | skeleton** view — flag frames with bad tracking
-  (occlusion, drift, etc.) plus a free-text note. Exports a second CSV.
+  (occlusion, drift, etc.) plus a free-text note, auto-saved to a second JSON.
 
 ---
 
@@ -42,8 +42,20 @@ npm install
 npm run dev        # opens http://localhost:5180
 ```
 
-Then drag a video file onto the page (or click **Choose video file**). A sample is at
-`videos/instructor1.m4v`.
+Then drag a video file onto the page (or click **Choose video file**), or drop videos into the
+`videos/` folder and pick them from the welcome-page library. (`videos/instructor1.m4v` is an
+example path — add your own clips.)
+
+**For the MediaPipe pose view + in-app pre-processing** (optional — not needed for rep counting),
+run the one-time setup, which creates a self-contained Python environment in `tools/.venv`:
+
+```bash
+npm run setup      # builds tools/.venv and installs MediaPipe + OpenCV
+npm run dev        # the welcome page can now pre-process videos (auto-detects tools/.venv)
+```
+
+Requires Python 3.9–3.12 on the machine (`python3`/`python`). Nothing is hardcoded — any teammate
+who clones the repo runs the same two commands. No `MEDIAPIPE_PYTHON`, no absolute paths.
 
 To build a static bundle you can host anywhere (or open via any static file server):
 
@@ -86,10 +98,11 @@ fully client-side — there is NO backend to configure. Do the following, detect
    `ffmpeg -i "<input>" -c:v libx264 -crf 18 -preset slow -c:a aac "<input-basename>_h264.mp4"`
    If ffmpeg is not installed, tell me how to install it (brew/apt/winget) and ask whether to proceed.
 
-4. (Optional — pose-quality review) If I want the MediaPipe skeleton view, in a Python 3.9–3.12
-   environment run `pip install -r tools/requirements.txt` then `python tools/extract_mediapipe.py`
-   to pre-extract skeletons for the videos in `./videos` (writes `./mediapipe_skeleton/`). Skip this
-   if I only need rep counting.
+4. (Optional — pose-quality review) If I want the MediaPipe skeleton view, run `npm run setup`. It
+   creates a self-contained Python environment in `tools/.venv` and installs MediaPipe + OpenCV
+   (needs Python 3.9–3.12 on the machine). The dev server then auto-detects it — I can pre-process
+   videos from the welcome-page library, or run `python tools/extract_mediapipe.py` directly. Skip
+   this if I only need rep counting.
 
 5. Start the dev server: `npm run dev`. It serves http://localhost:5180 and tries to open a browser.
    Tell me to open it in **Chrome or Edge** (not Safari/Firefox).
@@ -113,7 +126,7 @@ intentionally local-only.
 5. (Optional) Type **notes** for this rep.
 6. **Add Rep** (`Enter`). It appears as a colored segment on the timeline and a row in the Reps table.
 7. Repeat for every rep. Adjust boundaries any time by dragging a segment's edge on the timeline.
-8. **Export CSV**, or **Save Project** (JSON) to resume later.
+8. Nothing to save manually — your work auto-saves to `annotation/<video>/` as you go. Reopen the same video to resume.
 
 ---
 
@@ -182,25 +195,49 @@ So the three inputs all match by file name: `videos/<name>`, `mediapipe_skeleton
 A second annotation dimension: flag frames where the pose tracker is wrong. Because annotators may
 not have MediaPipe installed, skeletons are **pre-extracted** once, up front.
 
-### 1. Pre-extract skeletons (one-time, per video)
-
-Put videos in `videos/`, then run (Python 3.9–3.12):
+### 1. Set up MediaPipe (one-time, per machine)
 
 ```bash
-pip install -r tools/requirements.txt          # mediapipe + opencv (one time)
-python tools/extract_mediapipe.py              # processes every video in ./videos
-# python tools/extract_mediapipe.py --model-complexity 0   # faster, lower accuracy
+npm run setup      # creates tools/.venv and installs MediaPipe + OpenCV (Python 3.9–3.12)
 ```
 
-This writes a frame-aligned `mediapipe_skeleton/<video>.json` per video plus a `manifest.json`.
-Both `videos/` and `mediapipe_skeleton/` are git-ignored.
+This builds a self-contained environment in `tools/.venv`. The dev server **auto-detects** it — in
+discovery order: `MEDIAPIPE_PYTHON` (if you set it) → `tools/.venv` → `.venv` → system `python3`/
+`python`. So a teammate who clones the repo just runs `npm run setup` once; nothing is hardcoded.
+(`MEDIAPIPE_PYTHON=/path/to/python` remains available as an override if MediaPipe lives elsewhere,
+e.g. an existing conda env.)
 
-### 2. Annotate
+### 2. Extract skeletons (per video)
 
-Run `npm run dev`. The start screen lists **pre-processed videos** — pick one and it auto-loads the
+Put videos in `videos/`, then extract **from the welcome page** or the command line.
+
+**From the app (recommended).** Run `npm run dev`. The welcome page's **video library** lists every
+file in `videos/` with its status — skeleton ✓/–, action labels ✓/–, and annotation progress. Drop in
+new clips and click **Pre-process N new** to run MediaPipe on the ones missing a skeleton: they're
+processed **one at a time**, each with a live progress bar. If MediaPipe isn't set up, a banner tells
+you to run `npm run setup` (and the button is disabled until it is).
+
+**From the command line:**
+
+```bash
+# uses tools/.venv automatically; or activate it first / use any Python with mediapipe
+tools/.venv/bin/python tools/extract_mediapipe.py        # macOS/Linux  (Windows: tools\.venv\Scripts\python.exe)
+# add --model-complexity 0 for faster, lower-accuracy extraction
+```
+
+Either way you get a frame-aligned `mediapipe_skeleton/<video>.json` per video (storing **x, y, z and
+the per-keypoint visibility/confidence**) plus a `manifest.json`. Both `videos/` and
+`mediapipe_skeleton/` are git-ignored.
+
+### 3. Annotate
+
+Run `npm run dev`. The welcome page's **video library** lists every video — pick one and it auto-loads the
 RGB video **and** its skeleton (the video streams via HTTP range requests, no upload). The stage
 splits in two: **left = RGB**, **right = MediaPipe skeleton** drawn over a dimmed copy of the frame
-(toggle the backdrop with **RGB on/off**).
+(toggle the backdrop with **RGB on/off**). Under the skeleton, a quiet **per-keypoint confidence
+meter** shows each landmark's visibility as a bar — high-confidence bars stay dim so they don't
+compete with the pose, while low-confidence ones glow amber/red to flag where tracking is unreliable
+(hover a bar for the keypoint name + score).
 
 In the **Pose Review** panel, for the current frame toggle one or more error labels
 (`Q W E R T Y`) and/or type an `error_note`. Flagged frames get a red border on the skeleton panel
@@ -209,39 +246,43 @@ and appear in a jump-list. It's per-frame — most frames need nothing. Edit the
 
 ---
 
-## Output CSV
+## Output (auto-saved, no downloads)
 
-**Reps** — one row per rep (`⬇ Reps`):
+Every change is written to disk automatically — there are no download dialogs. For a video
+`coach.mp4` two JSON files are kept under `annotation/coach/`:
 
-```
-video_filename, video_fps, action_type, rep_index,
-start_frame, end_frame, n_frames, start_time_sec, end_time_sec, duration_sec, annotator, notes
-```
+**`annotation/<video>/rep_counting.json`** — the reps:
 
-- `rep_index` is per `action_type`, numbered by start-frame order with no gaps (deleting rep #2 of an
-  action renumbers the rest to 1, 2, …).
-- `start_frame`/`end_frame` are exact integer frame indices; the `*_time_sec` columns are the exact
-  presentation timestamps of those frames.
-- `n_frames` = inclusive frame count (`end_frame − start_frame + 1`, matches the UI); `duration_sec` =
-  elapsed time between the two boundary frames (`end_time_sec − start_time_sec`).
-
-**Pose errors** — one row per flagged frame (`⬇ Pose`, only when a skeleton is loaded):
-
-```
-video_filename, frame, time_sec, labels, error_note
+```jsonc
+{
+  "video": "coach.mp4", "fps": 29.97, "frame_count": 79595, "annotator": "...",
+  "reps": [
+    { "action_type": "squat", "rep_index": 1, "start_frame": 120, "end_frame": 168,
+      "n_frames": 49, "start_time_sec": 4.004, "end_time_sec": 5.605,
+      "duration_sec": 1.601, "notes": "" }
+  ],
+  "saved_at": "..."
+}
 ```
 
-- `labels` is a `;`-separated list of the toggled error labels for that frame.
+**`annotation/<video>/pose_analysis.json`** — one entry per flagged frame:
 
-Change the schemas in **`src/utils/csv.ts`** if you need different columns.
+```jsonc
+{
+  "video": "coach.mp4", "fps": 29.97, "frame_count": 79595,
+  "pose_errors": [ { "frame": 553, "time_sec": 18.45, "labels": ["occlusion"], "note": "legs cut off" } ],
+  "saved_at": "..."
+}
+```
 
----
+- `rep_index` is per `action_type`, renumbered by start-frame order (no gaps after a delete).
+- Frames are exact integer indices; `*_time_sec` are exact presentation timestamps.
+- The header shows the live save state (**Saved** / **Saving…** / **Save failed**).
+- **Resume is automatic**: reopen the same video and its saved reps + pose flags load back.
 
-## Save / resume a project
-
-**💾 Save** downloads `<videoname>_project.json` containing all reps, the annotator name, and custom
-actions. **📂 Load** restores them (load the same video first, then the project). Use this to pause and
-resume long annotation sessions.
+> Auto-save uses a small dev-server endpoint, so it works while running **`npm run dev`** (how the tool
+> is used). Files land under `video_annotation_toolkit/annotation/` (git-ignored). Build the JSON-shaping
+> in `src/utils/autosave.ts` if you need a different schema.
 
 ---
 
@@ -275,12 +316,13 @@ video_annotation_toolkit/
   src/
     engine/        VideoEngine + frame index, PlayLoop, AudioPlayer, skeleton (Mediabunny + WebCodecs)
     state/         zustand store (reps, pose errors, playback, zoom, action types)
-    hooks/         playback loop, keyboard shortcuts
+    hooks/         playback loop, keyboard shortcuts, autosave
     components/    VideoCanvas, SkeletonCanvas, TransportControls, Timeline, AnnotationPanel,
-                   PoseErrorPanel, RepTable, ExportBar, ShortcutsOverlay
+                   PoseErrorPanel, RepTable, SaveStatus, Tutorial, ShortcutsOverlay
     config/        actions.config.ts (default labels), poseErrors.config.ts
-    utils/         csv, time, ruler, actionStore (loads per-video action_labels)
+    utils/         autosave (writes annotation JSON), time, ruler, actionStore, csv helpers
   videos/             put source videos here (sample: instructor1.m4v)        [git-ignored]
+  annotation/         auto-saved output: <video>/rep_counting.json + pose_analysis.json [git-ignored]
   mediapipe_skeleton/ pre-extracted skeletons + manifest.json                 [git-ignored]
   action_labels/      per-video label files <name>.json (edit by hand)        [git-ignored]
   tools/              extract_mediapipe.py preprocessing
@@ -297,6 +339,9 @@ video_annotation_toolkit/
 | Video loads but won't play | Make sure you're on the latest Chrome/Edge; check the browser console. |
 | Dropdown shows default actions, not mine | Add/edit `action_labels/<video-basename>.json` and reload the video. |
 | Skeleton looks misaligned (warning banner) | Skeleton frame count ≠ video; re-run `extract_mediapipe.py`, ideally on a CFR re-encode. |
+| "Pose pre-processing isn't set up" banner / Pre-process button disabled | Run `npm run setup` (creates `tools/.venv` with MediaPipe), then restart `npm run dev`. Needs Python 3.9–3.12. |
+| `npm run setup` fails on `venv` | On Debian/Ubuntu install `python3-venv` (`sudo apt install python3-venv`); ensure `python3 --version` is 3.9–3.12 (not 3.13+). |
+| A preprocess row turns red ("failed") | Hover it for the error. Usually MediaPipe missing in the detected Python — run `npm run setup`, or set `MEDIAPIPE_PYTHON` to a Python that has it. |
 
 ---
 

@@ -7,7 +7,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "setup": "node tools/setup-venv.mjs"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "lucide-react": "^1.21.0",
