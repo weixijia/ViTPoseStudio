@@ -3,6 +3,18 @@
 # Model weights
 models/*.pth
 *.pt
+*.pth
+*.onnx
+# partial / streamed model downloads
+*.partial
+
+# Agent / editor tooling state
+.omc/
+.claude/
+
+# The annotation toolkit is now its own repo (~/Documents/video_annotation_toolkit,
+# company GitLab video-annotation-toolkit) — ignore any leftover/recreated path here.
+video_annotation_toolkit/
 
 # Output data
 output/
