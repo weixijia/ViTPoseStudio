@@ -75,8 +75,8 @@ const translations = {
     nav: { features: '功能特点', howItWorks: '工作原理', citation: '学术引用', github: 'GitHub' },
     hero: {
       badge: 'v1.0 现已发布',
-      title1: '实时骨骼',
-      title2: '姿态估计。',
+      title1: '实时骨骼姿态估计。',
+      title2: '',
       subtitle1: '多模态采集平台 Vomee 的轻量桌面版本 ——',
       subtitle2: '基于 RGB 的本地动作捕捉，配简洁的图形界面。',
       btnDownload: '在 GitHub 上查看',
@@ -93,8 +93,8 @@ const translations = {
     },
     features: {
       eyebrow: '功能特点',
-      title1: '高精度，',
-      title2: '开箱即用。',
+      title1: '高精度，开箱即用。',
+      title2: '',
       subtitle: 'Pose Studio 在本地运行，无需复杂环境配置，即可在桌面端获得稳定的计算机视觉能力。',
       items: [
         { icon: '🧍', title: '姿态模型选择器', desc: '按提供商和关键点覆盖范围筛选，再选择 RTMPose、RTMW、ViTPose 或 YOLO pose 模型。' },
@@ -104,8 +104,8 @@ const translations = {
     },
     howItWorks: {
       eyebrow: '系统架构',
-      title1: '多引擎',
-      title2: '推理管线。',
+      title1: '多引擎推理管线。',
+      title2: '',
       subtitle: 'Pose Studio 编排多个独立的神经网络 worker，实现稳定且可切换的姿态估计。',
       cards: [
         { step: '01', title: 'MMPose RTMLib Worker', desc: '默认引擎在 Mac 上以 ONNX Runtime CPU 运行 RTMPose-S Body+Feet，保证实时 skeleton 稳定输出。' },
