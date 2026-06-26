@@ -13,15 +13,15 @@
 
 <br/>
 
-**Pose Studio** is a distilled, lightweight version of our comprehensive multimodal data collection platform, [**Vomee**](https://doi.org/10.1145/3737904.3768536). While Vomee handles complex multimodal sensing (Video, Audio, mmWave, and Skeleton Data), **Pose Studio** is specifically designed to focus on **RGB-based visual motion capture**. It supports MMPose RTMLib, Sapiens2, ViTPose, and YOLO pose models through a filtered model selector.
+**Pose Studio** is a distilled, lightweight version of our comprehensive multimodal data collection platform, [**Vomee**](https://doi.org/10.1145/3737904.3768536). While Vomee handles complex multimodal sensing (Video, Audio, mmWave, and Skeleton Data), **Pose Studio** is specifically designed to focus on **RGB-based visual motion capture**. It supports MMPose RTMLib, ViTPose, and YOLO pose models through a filtered model selector.
 
 ---
 
 ## ✨ Key Features
 
 - 🖥️ **Modern Cross-Platform UI**: A sleek, fully-responsive macOS-style light mode interface with a card-based side control panel and live camera preview. Works seamlessly on **Windows, macOS, and Linux**.
-- 🧍 **Filtered Pose Model Selector**: Select by provider and keypoint coverage, then choose among RTMPose, RTMW, Sapiens2, ViTPose, and YOLO pose models.
-- ⚡ **Independent Framework Processes**: Loads Sapiens2, MMPose RTMLib models, ViTPose, and YOLO in separate worker processes so framework dependencies do not share one runtime.
+- 🧍 **Filtered Pose Model Selector**: Select by provider and keypoint coverage, then choose among RTMPose, RTMW, ViTPose, and YOLO pose models.
+- ⚡ **Independent Framework Processes**: Loads MMPose RTMLib models, ViTPose, and YOLO in separate worker processes so framework dependencies do not share one runtime.
 - 🧪 **Mac-Oriented Defaults**: Starts from RTMPose-S Body+Feet, while keeping heavier whole-body and offline options selectable.
 - 🎬 **Synchronized AV Recording Engine**: Uses a robust FFmpeg integration to perfectly synchronize live audio (from your system's microphone) with the skeleton-overlaid video. Handles hardware frame-rate jitter effortlessly by zero-padding to a strict 30 FPS.
 - 📊 **CSV Data Collection**: Every time you hit record, a synchronized `.csv` dataset is generated containing frame-by-frame data for all tracking keypoints, perfectly matched to the `.mp4` video timeline.

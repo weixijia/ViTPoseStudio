@@ -112,42 +112,6 @@ MODEL_CATALOG = [
         "spec": {"framework": "mmpose_rtmlib", "size": "performance", "pose_model": "whole_body", "tracking": False, "det_frequency": 1},
     },
     {
-        "label": "Sapiens2 0.4B Wholebody 308",
-        "provider": "Sapiens2",
-        "coverage": "Body+Face+Hands",
-        "scale": "0.4B",
-        "keypoints": 308,
-        "runtime": "MPS/CPU subprocess",
-        "spec": {"framework": "sapiens2", "size": "0.4b"},
-    },
-    {
-        "label": "Sapiens2 0.8B Wholebody 308",
-        "provider": "Sapiens2",
-        "coverage": "Body+Face+Hands",
-        "scale": "0.8B",
-        "keypoints": 308,
-        "runtime": "MPS/CPU subprocess",
-        "spec": {"framework": "sapiens2", "size": "0.8b"},
-    },
-    {
-        "label": "Sapiens2 1B Wholebody 308",
-        "provider": "Sapiens2",
-        "coverage": "Body+Face+Hands",
-        "scale": "1B",
-        "keypoints": 308,
-        "runtime": "MPS/CPU subprocess",
-        "spec": {"framework": "sapiens2", "size": "1b"},
-    },
-    {
-        "label": "Sapiens2 5B Wholebody 308",
-        "provider": "Sapiens2",
-        "coverage": "Body+Face+Hands",
-        "scale": "5B",
-        "keypoints": 308,
-        "runtime": "MPS/CPU subprocess",
-        "spec": {"framework": "sapiens2", "size": "5b"},
-    },
-    {
         "label": "ViTPose-S Wholebody 133",
         "provider": "ViTPose",
         "coverage": "Body+Face+Hands",
@@ -230,7 +194,6 @@ MODEL_CATALOG = [
     },
 ]
 
-FRAMEWORK_CHOICES = [(item["label"], item["spec"]) for item in MODEL_CATALOG]
 PROVIDER_FILTERS = ["All providers"] + sorted({item["provider"] for item in MODEL_CATALOG})
 COVERAGE_FILTERS = ["Any keypoints", "Body", "Body+Feet", "Body+Face+Hands"]
 
@@ -341,7 +304,7 @@ class PoseStudioApp(QMainWindow):
         self._setup_styles()
         
         # Setup background tasks
-        self.change_model(0, allow_startup_fallback=True)
+        self.change_model(0)
         
         # Open camera in main thread for macOS AVFoundation safety
         self.cap = cv2.VideoCapture(0)
@@ -682,7 +645,7 @@ class PoseStudioApp(QMainWindow):
         )
         self.model_summary_label.setText(summary)
 
-    def change_model(self, index, allow_startup_fallback=False):
+    def change_model(self, index):
         if self._updating_model_menu or index < 0:
             return
 
@@ -696,14 +659,14 @@ class PoseStudioApp(QMainWindow):
 
         self.status_label.setText(f"Loading {choice}...\nPlease wait.")
         self.status_label.setStyleSheet("color: #d97706; font-weight: 600;")
-        threading.Thread(target=self._load_specific_model, args=(choice, spec, allow_startup_fallback), daemon=True).start()
+        threading.Thread(target=self._load_specific_model, args=(choice, spec), daemon=True).start()
 
     @Slot(str, str)
     def _update_model_status(self, text, color):
         self.status_label.setText(text)
         self.status_label.setStyleSheet(f"color: {color}; font-weight: 600;")
 
-    def _load_specific_model(self, label="MMPose RTMPose-S Body+Feet", spec=None, allow_startup_fallback=False):
+    def _load_specific_model(self, label="MMPose RTMPose-S Body+Feet", spec=None):
         spec = dict(spec or {"framework": "mmpose_rtmlib", "size": "lightweight", "pose_model": "body_with_feet", "tracking": False, "det_frequency": 1})
         logging.info("Requested model change to %s with spec %s", label, spec)
         # Temporarily disable inference during swap
@@ -726,15 +689,6 @@ class PoseStudioApp(QMainWindow):
             suffix = f" - {details}" if details else ""
             self.model_status_signal.emit(f"Model Ready ({label}{suffix})", "#059669")
         except Exception as e:
-            if allow_startup_fallback and spec.get("framework") == "sapiens2" and not os.environ.get("SAPIENS_ROOT"):
-                logging.warning("Sapiens2 is not configured on this Mac. Falling back to MMPose RTMLib: %s", e)
-                fallback_label, fallback_spec = FRAMEWORK_CHOICES[0]
-                self.model_status_signal.emit(
-                    f"{label} is not configured on this Mac.\nLoading {fallback_label} instead.",
-                    "#d97706",
-                )
-                self._load_specific_model(fallback_label, dict(fallback_spec), allow_startup_fallback=False)
-                return
             logging.error(f"Model init error: {e}", exc_info=True)
             self.model_status_signal.emit(f"{label} Error: {e}", "#e30000")
 

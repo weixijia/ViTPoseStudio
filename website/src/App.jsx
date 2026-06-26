@@ -4,60 +4,44 @@ import './index.css'
 import './App.css'
 
 const LangContext = createContext('en')
-
-function useLang() {
-  return useContext(LangContext)
-}
-
-function useT() {
-  const lang = useLang()
-  return getTranslation(lang)
-}
+const useLang = () => useContext(LangContext)
+const useT = () => getTranslation(useLang())
 
 function useInView(threshold = 0.15) {
   const ref = useRef(null)
-  const [isVisible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(false)
   useEffect(() => {
     const el = ref.current
     if (!el) return
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect() } },
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
       { threshold }
     )
     obs.observe(el)
     return () => obs.disconnect()
   }, [threshold])
-  return [ref, isVisible]
+  return [ref, visible]
 }
 
 function LangSwitcher({ lang, setLang }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
   const current = languages.find(l => l.code === lang) || languages[0]
-
   useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
   }, [])
-
   return (
-    <div className="lang-switcher" ref={ref}>
-      <button className="lang-switcher__btn" onClick={() => setOpen(!open)}>
-        <span style={{ fontSize: '16px' }}>{current.flag}</span>
-        <span style={{ fontSize: '10px', opacity: 0.6 }}>{open ? '▲' : '▼'}</span>
+    <div className="lang" ref={ref}>
+      <button className="lang__btn" onClick={() => setOpen(!open)} aria-label="Language">
+        <span>{current.flag}</span><span className="lang__caret">{open ? '▲' : '▼'}</span>
       </button>
       {open && (
-        <div className="lang-switcher__dropdown">
+        <div className="lang__menu">
           {languages.map(l => (
-            <button
-              key={l.code}
-              className={`lang-switcher__item ${l.code === lang ? 'lang-switcher__item--active' : ''}`}
-              style={{ justifyContent: 'center' }}
-              onClick={() => { setLang(l.code); setOpen(false) }}
-            >
-              <span style={{ fontSize: '18px' }}>{l.flag}</span>
-            </button>
+            <button key={l.code} className={`lang__item ${l.code === lang ? 'is-active' : ''}`}
+              onClick={() => { setLang(l.code); setOpen(false) }}>{l.flag}</button>
           ))}
         </div>
       )}
@@ -68,17 +52,15 @@ function LangSwitcher({ lang, setLang }) {
 function Nav({ lang, setLang }) {
   const [scrolled, setScrolled] = useState(false)
   const t = useT()
-
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 40)
-    window.addEventListener('scroll', handler, { passive: true })
-    return () => window.removeEventListener('scroll', handler)
+    const h = () => setScrolled(window.scrollY > 16)
+    window.addEventListener('scroll', h, { passive: true })
+    return () => window.removeEventListener('scroll', h)
   }, [])
-
   return (
-    <nav className={`nav ${scrolled ? 'nav--scrolled' : ''}`}>
+    <nav className={`nav ${scrolled ? 'is-scrolled' : ''}`}>
       <div className="nav__inner">
-        <a href="#" className="nav__logo">Pose Studio</a>
+        <a href="#" className="nav__logo">Pose&nbsp;Studio</a>
         <div className="nav__links">
           <a href="#features">{t.nav.features}</a>
           <a href="#howitworks">{t.nav.howItWorks}</a>
@@ -95,40 +77,35 @@ function Hero() {
   const t = useT()
   return (
     <section className="hero">
-      <div className="hero__bg-glow" />
-      <div className="container fade-up">
+      <div className="hero__beam" aria-hidden="true" />
+      <div className="container hero__inner">
         <div className="hero__badge">{t.hero.badge}</div>
-        <h1>
-          {t.hero.title1} <br/> <span className="accent">{t.hero.title2}</span>
-        </h1>
-        <p>
-          {t.hero.subtitle1} <br/> {t.hero.subtitle2}
-        </p>
-        <a href="https://github.com/weixijia/ViTPoseStudio" className="btn">
-          {t.hero.btnDownload}
-        </a>
+        <h1 className="hero__title">{t.hero.title1} {t.hero.title2}</h1>
+        <p className="hero__sub">{t.hero.subtitle1} {t.hero.subtitle2}</p>
+        <div className="hero__actions">
+          <a href="https://github.com/weixijia/ViTPoseStudio" className="btn btn--primary">{t.hero.btnDownload}</a>
+          <a href="https://github.com/weixijia/ViTPoseStudio/releases" className="btn btn--ghost">{t.hero.btnReleases}</a>
+        </div>
       </div>
     </section>
   )
 }
 
 function Features() {
-  const [ref, visible] = useInView()
+  const [ref, v] = useInView()
   const t = useT()
-  
   return (
-    <section id="features" className="section-padding" ref={ref}>
+    <section id="features" className="section" ref={ref}>
       <div className="container">
-        <div className={`section-header ${visible ? 'fade-up' : 'pre-fade'}`}>
-          <h2>{t.features.title1} <br/> <span className="accent">{t.features.title2}</span></h2>
+        <div className={`head ${v ? 'reveal' : 'pre'}`}>
+          <span className="eyebrow">{t.features.eyebrow}</span>
+          <h2>{t.features.title1} {t.features.title2}</h2>
           <p>{t.features.subtitle}</p>
         </div>
-        <div className="grid-3">
-          {t.features.items.map((item, i) => (
-            <div key={i} className={`glass-card ${visible ? 'fade-up' : 'pre-fade'}`} style={{ animationDelay: `${0.1 * i + 0.1}s` }}>
-              <div className="feature-icon">{item.icon}</div>
-              <h3>{item.title}</h3>
-              <p>{item.desc}</p>
+        <div className="grid">
+          {t.features.items.map((it, i) => (
+            <div key={i} className={`card ${v ? 'reveal' : 'pre'}`} style={{ transitionDelay: `${0.06 * i}s` }}>
+              <h3>{it.title}</h3><p>{it.desc}</p>
             </div>
           ))}
         </div>
@@ -138,22 +115,21 @@ function Features() {
 }
 
 function HowItWorks() {
-  const [ref, visible] = useInView()
+  const [ref, v] = useInView()
   const t = useT()
-
   return (
-    <section id="howitworks" className="section-padding" ref={ref}>
+    <section id="howitworks" className="section" ref={ref}>
       <div className="container">
-        <div className={`section-header ${visible ? 'fade-up' : 'pre-fade'}`}>
-          <h2>{t.howItWorks.title1} <br/> <span className="accent">{t.howItWorks.title2}</span></h2>
+        <div className={`head ${v ? 'reveal' : 'pre'}`}>
+          <span className="eyebrow">{t.howItWorks.eyebrow}</span>
+          <h2>{t.howItWorks.title1} {t.howItWorks.title2}</h2>
           <p>{t.howItWorks.subtitle}</p>
         </div>
-        <div className="grid-3">
-          {t.howItWorks.cards.map((card, i) => (
-            <div key={i} className={`glass-card ${visible ? 'fade-up' : 'pre-fade'}`} style={{ animationDelay: `${0.1 * i + 0.1}s` }}>
-              <span className="step-number">{card.step}</span>
-              <h3>{card.title}</h3>
-              <p>{card.desc}</p>
+        <div className="grid">
+          {t.howItWorks.cards.map((c, i) => (
+            <div key={i} className={`card ${v ? 'reveal' : 'pre'}`} style={{ transitionDelay: `${0.06 * i}s` }}>
+              <span className="card__num mono">{c.step}</span>
+              <h3>{c.title}</h3><p>{c.desc}</p>
             </div>
           ))}
         </div>
@@ -162,92 +138,54 @@ function HowItWorks() {
   )
 }
 
-function Citation() {
-  const [ref, visible] = useInView()
-  const t = useT()
-
-  return (
-    <section id="citation" className="section-padding" ref={ref}>
-      <div className="container">
-        <div className={`citation-box ${visible ? 'fade-up' : 'pre-fade'}`} style={{ textAlign: 'left' }}>
-          <h2 style={{ marginBottom: '40px', fontSize: '28px', textAlign: 'center' }}>{t.citation.title1}</h2>
-          
-          <div style={{ marginBottom: '40px' }}>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              {t.citation.subtitleVomee}
-            </p>
-            <div className="bibtex-code">
-              <code>
-{`@inproceedings{10.1145/3737904.3768536,
-  author = {Wei, Xijia and Fang, Yuan and Chetty, Kevin and Cho, Youngjun and Bianchi-Berthouze, Nadia},
-  title = {Vomee: A Multimodal Sensing Platform for Video, Audio, mmWave and Skeleton Data Capturing},
-  year = {2025},
-  isbn = {9798400719813},
-  publisher = {Association for Computing Machinery},
-  address = {New York, NY, USA},
-  url = {https://doi.org/10.1145/3737904.3768536},
-  doi = {10.1145/3737904.3768536},
+const BIBTEX = {
+  vomee: `@inproceedings{10.1145/3737904.3768536,
+  author    = {Wei, Xijia and Fang, Yuan and Chetty, Kevin and Cho, Youngjun and Bianchi-Berthouze, Nadia},
+  title     = {Vomee: A Multimodal Sensing Platform for Video, Audio, mmWave and Skeleton Data Capturing},
+  year      = {2025},
   booktitle = {Proceedings of the 2025 ACM Workshop on Access Networks with Artificial Intelligence},
-  pages = {36--40},
-  numpages = {5},
-  keywords = {mmWave Sensing, Human Activity Recognition, Multimodal Motion Capture},
-  series = {MobiCom '25}
-}`}
-              </code>
-            </div>
-          </div>
-
-          <div>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
-              {t.citation.subtitleSapiens} <a href="https://github.com/facebookresearch/sapiens2" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>facebookresearch/sapiens2</a>
-            </p>
-            <div className="bibtex-code">
-              <code>
-{`@article{khirodkarsapiens2,
-  title={Sapiens2: Foundation for Human Vision Models},
-  author={Khirodkar, Rawal and Bagautdinov, Timur and Martinez, Julieta and Zhao, Su and James, Stephen and Selednik, Peter and Anderson, Stuart and Saito, Shunsuke},
-  journal={arXiv preprint arXiv:2604.21681},
-  year={2026}
-}`}
-              </code>
-            </div>
-          </div>
-
-          <div>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', marginTop: '40px' }}>
-              {t.citation.subtitlePose2Sim} <a href="https://github.com/perfanalytics/pose2sim" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>perfanalytics/Pose2Sim</a>
-            </p>
-            <div className="bibtex-code">
-              <code>
-{`@Article{Pagnon_2022_JOSS,
-  AUTHOR = {Pagnon, David and Domalain, Mathieu and Reveret, Lionel},
-  TITLE = {Pose2Sim: An open-source Python package for multiview markerless kinematics},
-  JOURNAL = {Journal of Open Source Software},
-  YEAR = {2022},
-  DOI = {10.21105/joss.04362},
-  URL = {https://joss.theoj.org/papers/10.21105/joss.04362}
-}`}
-              </code>
-            </div>
-          </div>
-
-          <div>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', marginTop: '40px' }}>
-              {t.citation.subtitleYolo} <a href="https://github.com/ultralytics/ultralytics" target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>Ultralytics/YOLO</a>
-            </p>
-            <div className="bibtex-code">
-              <code>
-{`@software{yolo_ultralytics,
-  author = {Glenn Jocher and Jing Qiu},
-  title = {Ultralytics YOLO},
-  year = {2026},
-  url = {https://github.com/ultralytics/ultralytics},
+  pages     = {36--40},
+  doi       = {10.1145/3737904.3768536},
+  series    = {MobiCom '25}
+}`,
+  pose2sim: `@Article{Pagnon_2022_JOSS,
+  author  = {Pagnon, David and Domalain, Mathieu and Reveret, Lionel},
+  title   = {Pose2Sim: An open-source Python package for multiview markerless kinematics},
+  journal = {Journal of Open Source Software},
+  year    = {2022},
+  doi     = {10.21105/joss.04362}
+}`,
+  yolo: `@software{yolo_ultralytics,
+  author  = {Glenn Jocher and Jing Qiu},
+  title   = {Ultralytics YOLO},
+  year    = {2026},
+  url     = {https://github.com/ultralytics/ultralytics},
   license = {AGPL-3.0}
-}`}
-              </code>
-            </div>
-          </div>
+}`,
+}
 
+function Citation() {
+  const [ref, v] = useInView()
+  const t = useT()
+  const items = [
+    { text: t.citation.subtitleVomee, code: BIBTEX.vomee, link: null },
+    { text: t.citation.subtitlePose2Sim, code: BIBTEX.pose2sim, link: { href: 'https://github.com/perfanalytics/pose2sim', label: 'perfanalytics/Pose2Sim' } },
+    { text: t.citation.subtitleYolo, code: BIBTEX.yolo, link: { href: 'https://github.com/ultralytics/ultralytics', label: 'Ultralytics/YOLO' } },
+  ]
+  return (
+    <section id="citation" className="section" ref={ref}>
+      <div className="container">
+        <div className={`head ${v ? 'reveal' : 'pre'}`}>
+          <span className="eyebrow">{t.citation.eyebrow}</span>
+          <h2>{t.citation.title1}</h2>
+        </div>
+        <div className={`cites ${v ? 'reveal' : 'pre'}`}>
+          {items.map((it, i) => (
+            <div key={i} className="cite">
+              <p>{it.text}{it.link && <> <a href={it.link.href} target="_blank" rel="noreferrer">{it.link.label}</a></>}</p>
+              <pre className="bibtex"><code>{it.code}</code></pre>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -257,23 +195,19 @@ function Citation() {
 function Footer() {
   const t = useT()
   return (
-    <footer className="footer-modern">
+    <footer className="footer">
       <div className="container">
-        <div className="footer-grid">
-          <div className="footer-brand">
-            <div className="footer-logo">Pose Studio</div>
-            <p className="footer-desc">{t.footer.brandDesc}</p>
-            <p className="footer-copy">{t.footer.copyright}</p>
+        <div className="footer__grid">
+          <div className="footer__brand">
+            <div className="footer__logo">Pose&nbsp;Studio</div>
+            <p className="footer__desc">{t.footer.brandDesc}</p>
+            <p className="footer__copy">{t.footer.copyright}</p>
           </div>
-          <div className="footer-links-grid">
+          <div className="footer__cols">
             {t.footer.columns.map((col, i) => (
-              <div key={i} className="footer-column">
-                <h4 className="footer-col-title">{col.title}</h4>
-                <div className="footer-col-links">
-                  {col.links.map((link, j) => (
-                    <a key={j} href={link.href}>{link.label}</a>
-                  ))}
-                </div>
+              <div key={i} className="footer__col">
+                <h4>{col.title}</h4>
+                {col.links.map((l, j) => <a key={j} href={l.href}>{l.label}</a>)}
               </div>
             ))}
           </div>
@@ -287,25 +221,11 @@ export default function App() {
   const [lang, setLang] = useState(() => {
     const saved = localStorage.getItem('posestudio-lang')
     if (saved && languages.some(l => l.code === saved)) return saved
-    const browserLang = navigator.language.toLowerCase()
-    if (browserLang.startsWith('zh')) return 'cn'
-    return 'en'
+    return navigator.language.toLowerCase().startsWith('zh') ? 'cn' : 'en'
   })
-
   useEffect(() => { localStorage.setItem('posestudio-lang', lang) }, [lang])
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`)
-      document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`)
-    }
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
-
   return (
     <LangContext.Provider value={lang}>
-      <div className="interactive-glow" />
       <Nav lang={lang} setLang={setLang} />
       <Hero />
       <Features />
